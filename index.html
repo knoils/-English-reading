@@ -9,40 +9,24 @@
     <!-- 引入 FontAwesome 图标库 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* 自定义过渡动画 */
         .highlight-word {
-            background-color: #fef08a; /* Tailwind yellow-300 */
+            background-color: #fef08a; 
             border-radius: 0.25rem;
             padding: 0 0.125rem;
             transition: background-color 0.1s ease-in-out;
         }
         .active-sentence {
-            border-color: #3b82f6; /* Tailwind blue-500 */
-            background-color: #eff6ff; /* Tailwind blue-50 */
+            border-color: #3b82f6; 
+            background-color: #eff6ff; 
             box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.1), 0 2px 4px -1px rgba(59, 130, 246, 0.06);
             transform: scale(1.01);
         }
-        .sentence-block {
-            transition: all 0.3s ease;
-        }
-        /* 隐藏滚动条但保留滚动功能 */
-        textarea::-webkit-scrollbar {
-            width: 8px;
-        }
-        textarea::-webkit-scrollbar-track {
-            background: #f1f1f1; 
-            border-radius: 4px;
-        }
-        textarea::-webkit-scrollbar-thumb {
-            background: #c1c1c1; 
-            border-radius: 4px;
-        }
-        textarea::-webkit-scrollbar-thumb:hover {
-            background: #a8a8a8; 
-        }
-        .spin-slow {
-            animation: spin 2s linear infinite;
-        }
+        .sentence-block { transition: all 0.3s ease; }
+        textarea::-webkit-scrollbar { width: 8px; }
+        textarea::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        textarea::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+        textarea::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+        .spin-slow { animation: spin 2s linear infinite; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col font-sans text-gray-800">
@@ -55,7 +39,7 @@
             </div>
             <div>
                 <h1 class="text-xl font-bold text-gray-900">AI 英语朗读与发音助手</h1>
-                <p class="text-sm text-gray-500">DeepSeek 语义分析 · 豆包极品音色</p>
+                <p class="text-sm text-gray-500">DeepSeek 语义分析 · Cloudflare 专属加速节点</p>
             </div>
         </div>
     </header>
@@ -86,14 +70,13 @@
             <div class="bg-gray-50 border-b border-gray-200 py-3 px-5 flex justify-between items-center">
                 <h2 class="text-sm font-bold text-gray-700"><i class="fas fa-file-lines mr-2"></i>智能标注与进度追踪</h2>
                 <div class="flex gap-4 text-sm text-gray-700 font-medium">
-                    <span><b>加粗</b> = 重读</span>
-                    <span><b class="mx-1">/</b> = 短停顿</span>
-                    <span><b class="mx-1">//</b> = 长停顿</span>
+                    <span><b class="font-extrabold text-black">加粗</b> = 重读</span>
+                    <span><b class="mx-1 text-black">/</b> = 短停顿</span>
+                    <span><b class="mx-1 text-black">//</b> = 长停顿</span>
                 </div>
             </div>
             
             <div id="annotated-output" class="p-6 overflow-y-auto flex-grow text-lg leading-relaxed text-gray-800 flex flex-col gap-3 min-h-[300px]">
-                <!-- 占位符状态 -->
                 <div id="placeholder-text" class="h-full flex flex-col items-center justify-center text-gray-400 gap-4 py-12">
                     <i class="fas fa-book-open text-5xl text-gray-300"></i>
                     <p>文本标注和高亮将显示在这里</p>
@@ -106,7 +89,6 @@
     <div class="bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] sticky bottom-0 z-10 py-4 px-6">
         <div class="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-4">
             
-            <!-- 播放控制组 -->
             <div class="flex items-center gap-2">
                 <button id="btn-prev" disabled class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-blue-100 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors" title="上一句">
                     <i class="fas fa-backward-step"></i>
@@ -124,21 +106,30 @@
                 <div id="status-text" class="text-sm font-medium text-gray-500 ml-2 w-28">准备就绪</div>
             </div>
 
-            <!-- 语速控制 -->
-            <div class="flex items-center gap-3 flex-grow max-w-md bg-gray-50 py-2 px-4 rounded-xl border border-gray-200">
+            <div class="flex items-center gap-3 bg-gray-50 py-2 px-4 rounded-xl border border-gray-200">
+                <i class="fas fa-user-astronaut text-gray-400"></i>
+                <div class="flex flex-col">
+                    <span class="text-xs text-gray-500 font-medium mb-1">音色 (Voice)</span>
+                    <select id="voice-select" class="bg-transparent text-sm font-bold outline-none cursor-pointer text-gray-700">
+                        <option value="en_male_tim_uranus_bigtts">Tim (美式男声)</option>
+                        <option value="en_female_dacey_uranus_bigtts" selected>Dacey (美式女声)</option>
+                        <option value="en_female_stokie_uranus_bigtts">Stokie (美式女声)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 flex-grow max-w-sm bg-gray-50 py-2 px-4 rounded-xl border border-gray-200">
                 <i class="fas fa-turtle text-gray-400"></i>
                 <div class="flex-grow flex flex-col">
                     <div class="flex justify-between text-xs text-gray-500 font-medium mb-1">
                         <span>语速 (Speed)</span>
                         <span id="speed-value">1.0x</span>
                     </div>
-                    <!-- 豆包API语速范围一般是 0.2 到 3.0，这里限制在常用范围 -->
                     <input type="range" id="speed-slider" min="0.5" max="2.0" step="0.1" value="1.0" class="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-blue-600">
                 </div>
                 <i class="fas fa-rabbit text-gray-400"></i>
             </div>
 
-            <!-- 重置按钮 -->
             <button id="btn-reset" class="px-5 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors shadow-sm">
                 <i class="fas fa-rotate-right mr-1"></i> 重新开始
             </button>
@@ -152,7 +143,7 @@
                 <i class="fas fa-circle-exclamation text-2xl"></i>
                 <h3 class="text-lg font-bold text-gray-900">提示</h3>
             </div>
-            <p id="modal-message" class="text-gray-600 mb-6">这里是提示信息的内容。</p>
+            <p id="modal-message" class="text-gray-600 mb-6 whitespace-pre-wrap leading-relaxed break-all">提示信息</p>
             <div class="flex justify-end">
                 <button id="btn-close-modal" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition-colors">
                     知道了
@@ -163,77 +154,62 @@
 
     <script>
         // ==========================================
-        // API 密钥配置区 (请在此处填入您的真实 Key)
+        // 1. 全局配置中心 (Configuration)
         // ==========================================
-        const DEEPSEEK_API_KEY = 'sk-daf2184108ac41b5bc2b2f57bbc2982a';
-        
-        // 火山引擎 (豆包TTS) 配置
-        // 申请地址: https://console.volcengine.com/speech/app
-        const DOUBAO_APPID = '1653093516'; 
-        const DOUBAO_TOKEN = 'yR1_-pcTRcNJHvaQ_U63R28sTZDOs-5o'; // 注意：通常是 Bearer Token
-        const DOUBAO_VOICE_TYPE = 'en_female_dacey_uranus_bigtts'; // 豆包通用女声。其他音色如：BV002_streaming(男声), BV700_V2_streaming(英音)等
-
-        document.addEventListener('DOMContentLoaded', () => {
-            // ==========================================
-            // 1. 核心状态管理与DOM元素获取
-            // ==========================================
-            const UI = {
-                input: document.getElementById('text-input'),
-                btnAnalyze: document.getElementById('btn-analyze'),
-                btnClearInput: document.getElementById('btn-clear-input'),
-                outputArea: document.getElementById('annotated-output'),
-                placeholder: document.getElementById('placeholder-text'),
-                btnPrev: document.getElementById('btn-prev'),
-                btnPlayPause: document.getElementById('btn-play-pause'),
-                iconPlayMain: document.getElementById('icon-play-main'),
-                iconLoadingMain: document.getElementById('icon-loading-main'),
-                btnNext: document.getElementById('btn-next'),
-                btnStop: document.getElementById('btn-stop'),
-                btnReset: document.getElementById('btn-reset'),
-                speedSlider: document.getElementById('speed-slider'),
-                speedValue: document.getElementById('speed-value'),
-                statusText: document.getElementById('status-text'),
-                modal: document.getElementById('custom-modal'),
-                modalMsg: document.getElementById('modal-message'),
-                btnCloseModal: document.getElementById('btn-close-modal')
-            };
-
-            const State = {
-                sentences: [], 
-                originalText: "", 
-                currentSentenceIndex: 0,
-                isPlaying: false,
-                isPaused: false,
-                speechRate: 1.0,
-                audioPlayer: new Audio(), // 替换原生 synth 为 HTML5 Audio 对象
-                hasAnalyzed: false,
-                isFetchingAudio: false
-            };
-
-            // ==========================================
-            // 2. API 调用逻辑 (DeepSeek + 豆包 TTS)
-            // ==========================================
+        const CONFIG = {
+            DEEPSEEK_API_KEY: 'sk-daf2184108ac41b5bc2b2f57bbc2982a',
+            DEEPSEEK_URL: 'https://api.deepseek.com/chat/completions',
             
-            // 调用 DeepSeek 进行断句和重音标注
-            async function callDeepSeekAPI(text) {
-                const url = 'https://api.deepseek.com/chat/completions';
-                const systemPrompt = `你是一个专业的英语发音指导专家。
+            DOUBAO_APPID: '1653093516',
+            DOUBAO_TOKEN: 'yR1_-pcTRcNJHvaQ_U63R28sTZDOs-5o',
+            DOUBAO_RESOURCE_ID: 'seed-tts-2.0', 
+            
+            WORKER_URL: 'https://doubao-tts-proxy.franklayden815.workers.dev', 
+
+            // 【修复核心】：重写 AI 提示词，严禁 AI 把所有词都标成重读，并加入 C++ 示例进行诱导
+            AI_PROMPT: `你是一个专业的英语发音指导专家。
 请对用户输入的英文文本进行发音标注。严格遵循以下规则，直接输出标注后的文本，不要包含任何解释或多余的文字：
 
-1. 重读 (Stress)：将需要重读的内容实词（如名词、动词、形容词、副词等）用星号包裹。必须是单独包裹每个单词，例如 *morning*。
-2. 短停顿 (Short Pause)：在意群之间、逗号或连词前插入斜杠 / 。
-3. 长停顿 (Long Pause)：在每个完整的句子结束处（如句号、问号、感叹号后）插入双斜杠 // 。`;
+1. 重读 (Stress)：将需要重读的核心信息词用星号包裹。必须单独包裹每个单词，例如 *morning*。注意：【切勿把所有单词都重读！】每句话只挑最关键的名词、动词或专有名词（如 C++）进行重读，保持自然的语调。
+2. 短停顿 (Short Pause)：在意群之间、较长的连词前插入斜杠 / 。
+3. 长停顿 (Long Pause)：在每个完整的句子结束处（如句号、问号、感叹号后）插入双斜杠 // 。
 
-                const response = await fetch(url, {
+示例输入：
+Good morning, dear professors. It is a great honor to be here today. My name is Rao Yang, and I am 21 years old. I passed CET-4 and learned C++, Python and MATLAB.
+
+示例输出：
+Good *morning* / dear *professors* // It is a great *honor* / to be *here* *today* // My *name* is Rao *Yang* / and I am *21* years *old* // I passed *CET-4* / and learned *C++* / *Python* / and *MATLAB* //`
+        };
+
+        // ==========================================
+        // 2. 状态管理 (State Management)
+        // ==========================================
+        const AppState = {
+            sentences: [], 
+            originalText: "", 
+            currentSentenceIndex: 0,
+            isPlaying: false,
+            isPaused: false,
+            isFetchingAudio: false,
+            speechRate: 1.0,
+            hasAnalyzed: false
+        };
+
+        // ==========================================
+        // 3. AI 服务模块 (AI Service)
+        // ==========================================
+        class AIService {
+            static async analyze(text) {
+                const response = await fetch(CONFIG.DEEPSEEK_URL, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+                        'Authorization': `Bearer ${CONFIG.DEEPSEEK_API_KEY}`
                     },
                     body: JSON.stringify({
                         model: 'deepseek-chat',
                         messages: [
-                            { role: 'system', content: systemPrompt },
+                            { role: 'system', content: CONFIG.AI_PROMPT },
                             { role: 'user', content: text }
                         ],
                         stream: false,
@@ -245,84 +221,123 @@
                 const data = await response.json();
                 return data.choices[0].message.content;
             }
+        }
 
-            // 调用火山引擎 (豆包) TTS 接口获取音频 Base64
-            async function callDoubaoTTS(text, speed) {
-                // 如果没有配置真实 AppID，为了防止代码直接报错崩溃，这里做一个拦截提示
-                if (DOUBAO_APPID === '您的火山引擎AppID') {
-                    throw new Error("请在代码中配置您的火山引擎 DOUBAO_APPID 和 DOUBAO_TOKEN 才能使用豆包音色！");
-                }
+        // ==========================================
+        // 4. TTS 语音服务模块 (TTS Service)
+        // ==========================================
+        class TTSService {
+            static async synthesize(text, voiceType, speed) {
+                const speechRate = Math.round((parseFloat(speed) - 1.0) * 100);
 
-                // 火山引擎真实接口地址
-                const targetUrl = 'https://openspeech.bytedance.com/api/v1/tts';
-                
-                // 【修复核心】：使用公共 CORS 代理解决跨域限制问题。
-                // 生产环境中，您必须自己搭建一个简单的后端（如 Node.js, Python）来转发请求。
-                const url = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
-                
-                // 构造符合火山引擎规范的 Payload
                 const payload = {
-                    app: {
-                        appid: DOUBAO_APPID,
-                        token: DOUBAO_TOKEN,
-                        cluster: "volcano_tts"
-                    },
-                    user: {
-                        uid: "english_learning_app_user"
-                    },
-                    audio: {
-                        voice_type: DOUBAO_VOICE_TYPE,
-                        encoding: "mp3",
-                        speed_ratio: parseFloat(speed)
-                    },
-                    request: {
-                        reqid: crypto.randomUUID(), // 生成唯一请求ID
+                    user: { uid: "english_learning_user" },
+                    req_params: {
                         text: text,
-                        text_type: "plain",
-                        operation: "query"
+                        speaker: voiceType,
+                        audio_params: { 
+                            format: "mp3", 
+                            sample_rate: 24000, 
+                            speech_rate: speechRate 
+                        }
                     }
                 };
+
+                const url = `${CONFIG.WORKER_URL}/api/v3/tts/unidirectional`;
 
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        // 【修复核心】：火山引擎官方文档特别要求 Bearer 后面必须加分号
-                        'Authorization': `Bearer; ${DOUBAO_TOKEN}`
+                        'X-Api-App-Id': CONFIG.DOUBAO_APPID,
+                        'X-Api-Access-Key': CONFIG.DOUBAO_TOKEN,
+                        'X-Api-Resource-Id': CONFIG.DOUBAO_RESOURCE_ID,
+                        'X-Api-Request-Id': crypto.randomUUID()
                     },
                     body: JSON.stringify(payload)
                 });
 
                 if (!response.ok) {
-                    throw new Error(`HTTP 状态码 ${response.status}。可能是跨域代理不稳定或 Token 失效。`);
+                    const err = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${err.substring(0, 100)}`);
                 }
-                
-                const data = await response.json();
-                if (data.code === 3000) {
-                    // 返回可直接播放的 Base64 格式音频 URL
-                    return `data:audio/mp3;base64,${data.data}`;
-                } else {
-                    throw new Error(`API 业务错误: ${data.message} (错误码: ${data.code})`);
-                }
+
+                return this._parseChunkedResponse(await response.text());
             }
 
-            // 解析 DeepSeek 返回的文本
-            function parseAIText(aiText) {
+            static _parseChunkedResponse(responseText) {
+                const audioChunks = [];
+                const lines = responseText.split('\n');
+                
+                const base64ToUint8Array = (base64) => {
+                    const binaryString = window.atob(base64);
+                    const bytes = new Uint8Array(binaryString.length);
+                    for (let i = 0; i < binaryString.length; i++) {
+                        bytes[i] = binaryString.charCodeAt(i);
+                    }
+                    return bytes;
+                };
+
+                for (const line of lines) {
+                    let jsonStr = line.trim();
+                    if (!jsonStr) continue;
+                    
+                    if (jsonStr.startsWith('data:')) {
+                        jsonStr = jsonStr.substring(5).trim();
+                    }
+                    
+                    try {
+                        const json = JSON.parse(jsonStr);
+                        
+                        if ((json.code === 0 || json.code === 3000) && json.data) {
+                            audioChunks.push(base64ToUint8Array(json.data));
+                        } 
+                        else if (json.code === 20000000) {
+                            continue; 
+                        } 
+                        else if (json.code && json.code !== 0 && json.code !== 3000 && json.code !== 20000000) {
+                            throw new Error(`业务错误: ${json.message} (错误码: ${json.code})`);
+                        }
+                    } catch (e) { 
+                        if (e.message.includes("业务错误")) {
+                            throw e;
+                        }
+                    }
+                }
+
+                if (audioChunks.length === 0) {
+                    throw new Error(`解析音频失败。服务器返回内容摘要：\n${responseText.substring(0, 150)}...`);
+                }
+
+                const totalLength = audioChunks.reduce((acc, chunk) => acc + chunk.length, 0);
+                const fullAudio = new Uint8Array(totalLength);
+                let offset = 0;
+                for (const chunk of audioChunks) {
+                    fullAudio.set(chunk, offset);
+                    offset += chunk.length;
+                }
+
+                return URL.createObjectURL(new Blob([fullAudio], { type: 'audio/mp3' }));
+            }
+        }
+
+        // ==========================================
+        // 5. 文本解析引擎 (Text Parser)
+        // ==========================================
+        class TextParser {
+            static parse(aiText) {
                 const sentenceSegments = aiText.split('//').filter(s => s.trim().length > 0);
-                let parsedSentences = [];
+                const parsedSentences = [];
                 let globalWordIndex = 0;
 
                 sentenceSegments.forEach((sStr, sIndex) => {
-                    // 【修复核心】：清除切割后残留在句首的换行符与空格，防止生成多余的 <br> 导致空行
                     sStr = sStr.trim();
-                    
                     let cleanSentence = "";
-                    let htmlParts = [];
-                    let tokens = []; // 用于时间轴高亮算法
-                    let charIndex = 0;
-
-                    // 【修复核心】：加入对智能引号/中文单引号（’‘´）的支持，并允许前后有空格，防止 *I’m* 解析断裂
-                    const tokenRegex = /(?:\*\*?\s*([a-zA-Z0-9]+(?:[-'’‘´][a-zA-Z0-9]+)*)\s*\*\*?)|([a-zA-Z0-9]+(?:[-'’‘´][a-zA-Z0-9]+)*)|(\/)|(\s+)|([^a-zA-Z0-9\s\/]+)/g;
+                    const htmlParts = [];
+                    const tokens = []; 
+                    
+                    // 【修复核心】：在正则的单词匹配 [a-zA-Z0-9] 中加入 + 和 # 号，使 C++ 和 C# 能被正确捕获为单词
+                    const tokenRegex = /(?:\*\*?\s*([a-zA-Z0-9+#]+(?:[-'’‘´][a-zA-Z0-9+#]+)*)\s*\*\*?)|([a-zA-Z0-9+#]+(?:[-'’‘´][a-zA-Z0-9+#]+)*)|(\/)|(\s+)|([^a-zA-Z0-9+#\s\/]+)/g;
                     let match;
 
                     while ((match = tokenRegex.exec(sStr)) !== null) {
@@ -331,48 +346,78 @@
                             const word = match[1] || match[2];
                             const currentWordId = `word-${globalWordIndex++}`;
                             
-                            // 记录单词用于高亮估算
                             tokens.push({ type: 'word', text: word, id: currentWordId });
                             
+                            // 【修复核心】：拉大对比度！重读词用 font-extrabold 纯黑色，普通词用 font-medium 灰色
                             const classes = isStress 
-                                ? "clickable-word cursor-pointer hover:bg-blue-200 hover:text-blue-800 rounded px-0.5 transition-colors duration-150 inline-block font-bold text-gray-900"
-                                : "clickable-word cursor-pointer hover:bg-blue-200 hover:text-blue-800 rounded px-0.5 transition-colors duration-150 inline-block";
+                                ? "clickable-word cursor-pointer hover:bg-blue-200 hover:text-blue-800 rounded px-0.5 transition-colors duration-150 inline-block font-extrabold text-black"
+                                : "clickable-word cursor-pointer hover:bg-blue-200 hover:text-blue-800 rounded px-0.5 transition-colors duration-150 inline-block font-medium text-gray-500";
                             
-                            htmlParts.push(`<span id="${currentWordId}" data-text="${word}" class="${classes}" title="点击发音">${word}</span>`);
+                            htmlParts.push(`<span id="${currentWordId}" data-text="${word}" class="${classes}" title="点击单独发音">${word}</span>`);
                             cleanSentence += word;
                         } else if (match[3]) {
-                            htmlParts.push(`<span class="text-black font-bold mx-2 select-none">/</span>`);
-                            cleanSentence += ', '; // 转化为逗号让豆包TTS停顿
+                            // 短停顿符号样式优化
+                            htmlParts.push(`<span class="text-black font-extrabold mx-2 select-none">/</span>`);
+                            cleanSentence += ', '; 
                         } else if (match[4]) {
                             htmlParts.push(match[4].replace(/\n/g, '<br>'));
                             cleanSentence += match[4];
                         } else if (match[5]) {
-                            htmlParts.push(`<span class="text-gray-600">${match[5]}</span>`);
+                            // 其他标点符号样式优化
+                            htmlParts.push(`<span class="text-gray-400 font-medium">${match[5]}</span>`);
                             cleanSentence += match[5];
                         }
                     }
 
-                    htmlParts.push(`<span class="text-black font-bold mx-2 select-none">//</span>`);
+                    // 长停顿符号样式优化
+                    htmlParts.push(`<span class="text-black font-extrabold mx-2 select-none">//</span>`);
                     cleanSentence += '.'; 
                     
                     parsedSentences.push({
                         index: sIndex,
                         rawText: cleanSentence.trim(), 
-                        tokens: tokens, // 包含句子中所有的纯单词
+                        tokens: tokens, 
                         html: htmlParts.join('')
                     });
                 });
 
                 return parsedSentences;
             }
+        }
 
-            // ==========================================
-            // 3. UI 渲染与更新
-            // ==========================================
+        // ==========================================
+        // 6. UI 管理器 (UI Manager)
+        // ==========================================
+        class UIManager {
+            static get DOM() {
+                return {
+                    input: document.getElementById('text-input'),
+                    btnAnalyze: document.getElementById('btn-analyze'),
+                    btnClearInput: document.getElementById('btn-clear-input'),
+                    outputArea: document.getElementById('annotated-output'),
+                    placeholder: document.getElementById('placeholder-text'),
+                    btnPrev: document.getElementById('btn-prev'),
+                    btnPlayPause: document.getElementById('btn-play-pause'),
+                    iconPlayMain: document.getElementById('icon-play-main'),
+                    iconLoadingMain: document.getElementById('icon-loading-main'),
+                    btnNext: document.getElementById('btn-next'),
+                    btnStop: document.getElementById('btn-stop'),
+                    btnReset: document.getElementById('btn-reset'),
+                    voiceSelect: document.getElementById('voice-select'),
+                    speedSlider: document.getElementById('speed-slider'),
+                    speedValue: document.getElementById('speed-value'),
+                    statusText: document.getElementById('status-text'),
+                    modal: document.getElementById('custom-modal'),
+                    modalMsg: document.getElementById('modal-message'),
+                    btnCloseModal: document.getElementById('btn-close-modal')
+                };
+            }
 
-            function renderAnnotatedText() {
-                UI.outputArea.innerHTML = '';
-                State.sentences.forEach(sentence => {
+            static renderSentences(sentences, onPlaySentence, onPlayWord) {
+                const DOM = this.DOM;
+                DOM.outputArea.innerHTML = '';
+                
+                sentences.forEach(sentence => {
                     const div = document.createElement('div');
                     div.id = `sentence-${sentence.index}`;
                     div.className = 'sentence-block bg-white border border-gray-200 rounded-xl p-4 shadow-sm';
@@ -382,87 +427,87 @@
                                 <i class="fas fa-volume-up icon-vol"></i>
                                 <i class="fas fa-circle-notch fa-spin hidden absolute icon-load"></i>
                             </button>
-                            <div class="flex-grow pt-1">${sentence.html}</div>
+                            <div class="flex-grow pt-1 leading-relaxed">${sentence.html}</div>
                         </div>
                     `;
-                    UI.outputArea.appendChild(div);
+                    DOM.outputArea.appendChild(div);
                 });
 
                 document.querySelectorAll('.btn-play-inline').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        const idx = parseInt(e.currentTarget.getAttribute('data-index'));
-                        playSpecificSentence(idx, e.currentTarget);
-                    });
+                    btn.addEventListener('click', (e) => onPlaySentence(parseInt(e.currentTarget.getAttribute('data-index')), e.currentTarget));
                 });
 
                 document.querySelectorAll('.clickable-word').forEach(wordSpan => {
                     wordSpan.addEventListener('click', (e) => {
                         e.stopPropagation();
-                        const wordText = e.currentTarget.getAttribute('data-text');
-                        const wordId = e.currentTarget.id;
-                        playSpecificWord(wordText, wordId);
+                        onPlayWord(e.currentTarget.getAttribute('data-text'), e.currentTarget.id);
                     });
                 });
             }
 
-            function updateControlsState() {
-                if (!State.hasAnalyzed) {
-                    UI.btnPlayPause.disabled = true;
-                    UI.btnStop.disabled = true;
-                    if(UI.btnPrev) UI.btnPrev.disabled = true;
-                    if(UI.btnNext) UI.btnNext.disabled = true;
-                    UI.iconPlayMain.className = 'fas fa-play';
-                    UI.iconLoadingMain.classList.add('hidden');
+            static updateControls() {
+                const DOM = this.DOM;
+                if (!AppState.hasAnalyzed) {
+                    DOM.btnPlayPause.disabled = true;
+                    DOM.btnStop.disabled = true;
+                    DOM.btnPrev.disabled = true;
+                    DOM.btnNext.disabled = true;
+                    DOM.iconPlayMain.className = 'fas fa-play';
+                    DOM.iconLoadingMain.classList.add('hidden');
                     return;
                 }
                 
-                UI.btnPlayPause.disabled = false;
-                UI.btnStop.disabled = !State.isPlaying && !State.isPaused && !State.isFetchingAudio;
-                if(UI.btnPrev) UI.btnPrev.disabled = State.sentences.length <= 1;
-                if(UI.btnNext) UI.btnNext.disabled = State.sentences.length <= 1;
+                DOM.btnPlayPause.disabled = false;
+                DOM.btnStop.disabled = !AppState.isPlaying && !AppState.isPaused && !AppState.isFetchingAudio;
+                DOM.btnPrev.disabled = AppState.sentences.length <= 1;
+                DOM.btnNext.disabled = AppState.sentences.length <= 1;
 
-                // UI Loading State
-                if (State.isFetchingAudio) {
-                    UI.iconPlayMain.classList.add('hidden');
-                    UI.iconLoadingMain.classList.remove('hidden');
-                    UI.btnPlayPause.classList.replace('bg-blue-100', 'bg-gray-100');
-                    UI.btnPlayPause.classList.replace('text-blue-600', 'text-gray-600');
-                    UI.statusText.textContent = `获取音频...`;
-                    UI.btnAnalyze.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>请求豆包API中</span>';
+                if (AppState.isFetchingAudio) {
+                    DOM.iconPlayMain.classList.add('hidden');
+                    DOM.iconLoadingMain.classList.remove('hidden');
+                    DOM.btnPlayPause.classList.replace('bg-blue-100', 'bg-gray-100');
+                    DOM.btnPlayPause.classList.replace('text-blue-600', 'text-gray-600');
+                    DOM.statusText.textContent = `获取音频...`;
+                    DOM.btnAnalyze.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>生成发音中</span>';
                     return;
                 }
 
-                UI.iconLoadingMain.classList.add('hidden');
-                UI.iconPlayMain.classList.remove('hidden');
+                DOM.iconLoadingMain.classList.add('hidden');
+                DOM.iconPlayMain.classList.remove('hidden');
 
-                if (State.isPlaying && !State.isPaused) {
-                    UI.iconPlayMain.className = 'fas fa-pause';
-                    UI.btnPlayPause.classList.remove('bg-gray-100', 'bg-green-100', 'text-gray-600', 'text-green-600');
-                    UI.btnPlayPause.classList.add('bg-yellow-100', 'text-yellow-600');
-                    UI.statusText.textContent = `朗读第 ${State.currentSentenceIndex + 1} 句`;
-                    UI.btnAnalyze.innerHTML = '<i class="fas fa-pause"></i><span>暂停朗读</span>';
-                } else if (State.isPaused) {
-                    UI.iconPlayMain.className = 'fas fa-play';
-                    UI.btnPlayPause.classList.remove('bg-gray-100', 'bg-yellow-100', 'text-gray-600', 'text-yellow-600');
-                    UI.btnPlayPause.classList.add('bg-green-100', 'text-green-600');
-                    UI.statusText.textContent = `暂停在第 ${State.currentSentenceIndex + 1} 句`;
-                    UI.btnAnalyze.innerHTML = '<i class="fas fa-play"></i><span>继续朗读</span>';
+                if (AppState.isPlaying && !AppState.isPaused) {
+                    DOM.iconPlayMain.className = 'fas fa-pause';
+                    DOM.btnPlayPause.classList.remove('bg-gray-100', 'bg-green-100', 'text-gray-600', 'text-green-600');
+                    DOM.btnPlayPause.classList.add('bg-yellow-100', 'text-yellow-600');
+                    DOM.statusText.textContent = `朗读第 ${AppState.currentSentenceIndex + 1} 句`;
+                    DOM.btnAnalyze.innerHTML = '<i class="fas fa-pause"></i><span>暂停朗读</span>';
+                } else if (AppState.isPaused) {
+                    DOM.iconPlayMain.className = 'fas fa-play';
+                    DOM.btnPlayPause.classList.remove('bg-gray-100', 'bg-yellow-100', 'text-gray-600', 'text-yellow-600');
+                    DOM.btnPlayPause.classList.add('bg-green-100', 'text-green-600');
+                    DOM.statusText.textContent = `暂停在第 ${AppState.currentSentenceIndex + 1} 句`;
+                    DOM.btnAnalyze.innerHTML = '<i class="fas fa-play"></i><span>继续朗读</span>';
                 } else {
-                    UI.iconPlayMain.className = 'fas fa-play';
-                    UI.btnPlayPause.classList.remove('bg-gray-100', 'bg-yellow-100', 'bg-green-100', 'text-gray-600', 'text-yellow-600', 'text-green-600');
-                    UI.btnPlayPause.classList.add('bg-blue-100', 'text-blue-600');
-                    UI.statusText.textContent = '准备就绪';
-                    UI.btnAnalyze.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i><span>分析并开始朗读</span>';
+                    DOM.iconPlayMain.className = 'fas fa-play';
+                    DOM.btnPlayPause.classList.remove('bg-gray-100', 'bg-yellow-100', 'bg-green-100', 'text-gray-600', 'text-yellow-600', 'text-green-600');
+                    DOM.btnPlayPause.classList.add('bg-blue-100', 'text-blue-600');
+                    DOM.statusText.textContent = '准备就绪';
+                    DOM.btnAnalyze.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i><span>分析并开始朗读</span>';
                 }
             }
 
-            function clearHighlights() {
-                document.querySelectorAll('.highlight-word').forEach(el => el.classList.remove('highlight-word'));
-                document.querySelectorAll('.active-sentence').forEach(el => el.classList.remove('active-sentence'));
+            static setAnalyzingState(isAnalyzing) {
+                const DOM = this.DOM;
+                DOM.btnAnalyze.disabled = isAnalyzing;
+                if (isAnalyzing) {
+                    DOM.btnAnalyze.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>DeepSeek 分析中...</span>';
+                } else {
+                    this.updateControls(); 
+                }
             }
 
-            function highlightSentence(index) {
-                clearHighlights();
+            static highlightSentence(index) {
+                document.querySelectorAll('.active-sentence').forEach(el => el.classList.remove('active-sentence'));
                 const block = document.getElementById(`sentence-${index}`);
                 if (block) {
                     block.classList.add('active-sentence');
@@ -470,259 +515,297 @@
                 }
             }
 
-            function highlightWord(wordId) {
+            static highlightWord(wordId) {
                 document.querySelectorAll('.highlight-word').forEach(el => el.classList.remove('highlight-word'));
                 const wordEl = document.getElementById(wordId);
                 if (wordEl) wordEl.classList.add('highlight-word');
             }
 
-            // ==========================================
-            // 4. 网络音频引擎 (HTML5 Audio 封装)
-            // ==========================================
-            
-            async function playSpecificWord(wordText, wordId) {
-                stopPlayback();
-                highlightWord(wordId);
-                State.isFetchingAudio = true;
-                updateControlsState();
-
-                try {
-                    const audioUrl = await callDoubaoTTS(wordText, State.speechRate);
-                    State.audioPlayer.src = audioUrl;
-                    State.audioPlayer.onended = () => {
-                        const el = document.getElementById(wordId);
-                        if (el) el.classList.remove('highlight-word');
-                        State.isPlaying = false;
-                        updateControlsState();
-                    };
-                    State.isPlaying = true;
-                    State.isFetchingAudio = false;
-                    updateControlsState();
-                    await State.audioPlayer.play();
-                } catch (error) {
-                    State.isFetchingAudio = false;
-                    updateControlsState();
-                    
-                    let errorMsg = error.message;
-                    if (errorMsg.includes('Failed to fetch')) {
-                        errorMsg = '前端跨域请求被浏览器拦截，或 CORS 公共代理当前不可用。生产环境需用后端转发。';
-                    }
-                    showModal('获取单词发音失败: ' + errorMsg);
-                }
+            static clearHighlights() {
+                document.querySelectorAll('.highlight-word').forEach(el => el.classList.remove('highlight-word'));
+                document.querySelectorAll('.active-sentence').forEach(el => el.classList.remove('active-sentence'));
             }
 
-            async function playSpecificSentence(index, btnElement = null) {
-                stopPlayback();
-                State.currentSentenceIndex = index;
-                highlightSentence(index);
-                
-                // 单句播放按钮的 loading 动画
-                if(btnElement) {
-                    btnElement.querySelector('.icon-vol').classList.add('hidden');
-                    btnElement.querySelector('.icon-load').classList.remove('hidden');
-                }
-
-                State.isFetchingAudio = true;
-                updateControlsState();
-
-                const sentenceData = State.sentences[index];
-
-                try {
-                    const audioUrl = await callDoubaoTTS(sentenceData.rawText, State.speechRate);
-                    State.audioPlayer.src = audioUrl;
-                    
-                    // 模拟高亮算法：根据音频时间进度，估算当前读到的单词位置
-                    const wordTokens = sentenceData.tokens;
-                    State.audioPlayer.ontimeupdate = () => {
-                        if(!State.audioPlayer.duration || wordTokens.length === 0) return;
-                        const progress = State.audioPlayer.currentTime / State.audioPlayer.duration;
-                        const wordIndex = Math.min(Math.floor(progress * wordTokens.length), wordTokens.length - 1);
-                        if(wordTokens[wordIndex]) highlightWord(wordTokens[wordIndex].id);
-                    };
-
-                    State.audioPlayer.onended = () => {
-                        State.isPlaying = false;
-                        State.isPaused = false;
-                        // 准备下一句
-                        if (State.currentSentenceIndex < State.sentences.length - 1) {
-                            State.currentSentenceIndex++;
-                            highlightSentence(State.currentSentenceIndex);
-                        } else {
-                            State.currentSentenceIndex = 0; 
-                        }
-                        updateControlsState();
-                    };
-
-                    State.isFetchingAudio = false;
-                    State.isPlaying = true;
-                    updateControlsState();
-                    
-                    if(btnElement) {
-                        btnElement.querySelector('.icon-load').classList.add('hidden');
-                        btnElement.querySelector('.icon-vol').classList.remove('hidden');
-                    }
-                    
-                    await State.audioPlayer.play();
-
-                } catch (error) {
-                    State.isFetchingAudio = false;
-                    if(btnElement) {
-                        btnElement.querySelector('.icon-load').classList.add('hidden');
-                        btnElement.querySelector('.icon-vol').classList.remove('hidden');
-                    }
-                    updateControlsState();
-                    
-                    let errorMsg = error.message;
-                    if (errorMsg.includes('Failed to fetch')) {
-                        errorMsg = '前端跨域请求被浏览器拦截，或 CORS 公共代理当前不可用。生产环境需用后端转发。';
-                    }
-                    showModal('获取句子发音失败: ' + errorMsg);
-                }
-            }
-
-            function togglePlayPause() {
-                if (!State.hasAnalyzed) return;
-
-                if (State.isPlaying) {
-                    if (State.isPaused) {
-                        State.audioPlayer.play();
-                        State.isPaused = false;
-                    } else {
-                        State.audioPlayer.pause();
-                        State.isPaused = true;
-                    }
+            static toggleInlineLoading(btnElement, isLoading) {
+                if (!btnElement) return;
+                const iconVol = btnElement.querySelector('.icon-vol');
+                const iconLoad = btnElement.querySelector('.icon-load');
+                if (isLoading) {
+                    iconVol.classList.add('hidden');
+                    iconLoad.classList.remove('hidden');
                 } else {
-                    playSpecificSentence(State.currentSentenceIndex);
+                    iconLoad.classList.add('hidden');
+                    iconVol.classList.remove('hidden');
                 }
-                updateControlsState();
             }
 
-            function stopPlayback() {
-                State.audioPlayer.pause();
-                State.audioPlayer.currentTime = 0;
-                State.isPlaying = false;
-                State.isPaused = false;
-                State.isFetchingAudio = false;
-                clearHighlights();
-                updateControlsState();
+            static resetAllInlineLoadings() {
+                document.querySelectorAll('.btn-play-inline').forEach(btn => this.toggleInlineLoading(btn, false));
+            }
+
+            static showModal(msg) {
+                const DOM = this.DOM;
+                DOM.modalMsg.textContent = msg;
+                DOM.modal.classList.remove('hidden');
+                void DOM.modal.offsetWidth; 
+                DOM.modal.classList.remove('opacity-0');
+                DOM.modal.querySelector('#modal-content-box').classList.remove('scale-95');
+                DOM.modal.querySelector('#modal-content-box').classList.add('scale-100');
+            }
+
+            static hideModal() {
+                const DOM = this.DOM;
+                DOM.modal.classList.add('opacity-0');
+                DOM.modal.querySelector('#modal-content-box').classList.remove('scale-100');
+                DOM.modal.querySelector('#modal-content-box').classList.add('scale-95');
+                setTimeout(() => DOM.modal.classList.add('hidden'), 300); 
+            }
+        }
+
+        // ==========================================
+        // 7. 音频引擎 (Audio Engine)
+        // ==========================================
+        class AudioEngine {
+            constructor() {
+                this.audio = new Audio();
+                this.currentTokens = [];
+                this.onEndedCallback = null;
+
+                this.audio.addEventListener('timeupdate', () => this._handleTimeUpdate());
+                this.audio.addEventListener('ended', () => this._handleEnded());
+            }
+
+            async playTTS(text, voiceType, speechRate, tokens = []) {
+                this.stop();
+                this.currentTokens = tokens;
                 
-                // 重置所有行内按钮状态
-                document.querySelectorAll('.btn-play-inline').forEach(btn => {
-                    btn.querySelector('.icon-load').classList.add('hidden');
-                    btn.querySelector('.icon-vol').classList.remove('hidden');
-                });
+                const audioUrl = await TTSService.synthesize(text, voiceType, speechRate);
+                this.audio.src = audioUrl;
+                await this.audio.play();
             }
 
-            // ==========================================
-            // 5. 事件监听器绑定
-            // ==========================================
+            pause() { this.audio.pause(); }
+            resume() { this.audio.play(); }
+            
+            stop() {
+                this.audio.pause();
+                this.audio.currentTime = 0;
+                this.currentTokens = [];
+            }
 
-            UI.btnAnalyze.addEventListener('click', async () => {
-                const text = UI.input.value.trim();
-                if (!text) return showModal('请输入一些英语文本后再进行分析。');
+            setOnEnded(callback) {
+                this.onEndedCallback = callback;
+            }
 
-                if (State.hasAnalyzed && State.originalText === text) {
-                    togglePlayPause();
+            _handleTimeUpdate() {
+                if (!this.audio.duration || this.currentTokens.length === 0) return;
+                const progress = this.audio.currentTime / this.audio.duration;
+                const wordIndex = Math.min(Math.floor(progress * this.currentTokens.length), this.currentTokens.length - 1);
+                if (this.currentTokens[wordIndex]) {
+                    UIManager.highlightWord(this.currentTokens[wordIndex].id);
+                }
+            }
+
+            _handleEnded() {
+                if (this.onEndedCallback) this.onEndedCallback();
+            }
+        }
+
+        // ==========================================
+        // 8. 主应用控制器 (App Controller)
+        // ==========================================
+        class App {
+            static init() {
+                this.audioEngine = new AudioEngine();
+                this.bindEvents();
+            }
+
+            static bindEvents() {
+                const DOM = UIManager.DOM;
+                
+                DOM.btnAnalyze.addEventListener('click', () => this.handleAnalyze());
+                DOM.btnPlayPause.addEventListener('click', () => this.togglePlayPause());
+                DOM.btnStop.addEventListener('click', () => this.stopAll());
+                DOM.btnPrev.addEventListener('click', () => this.playRelativeSentence(-1));
+                DOM.btnNext.addEventListener('click', () => this.playRelativeSentence(1));
+                DOM.btnClearInput.addEventListener('click', () => { DOM.input.value = ''; DOM.input.focus(); });
+                DOM.btnReset.addEventListener('click', () => this.resetApp());
+                DOM.btnCloseModal.addEventListener('click', () => UIManager.hideModal());
+                DOM.modal.addEventListener('click', (e) => { if (e.target === DOM.modal) UIManager.hideModal(); });
+
+                DOM.speedSlider.addEventListener('input', (e) => {
+                    const val = parseFloat(e.target.value).toFixed(1);
+                    AppState.speechRate = val;
+                    DOM.speedValue.textContent = `${val}x`;
+                });
+
+                DOM.speedSlider.addEventListener('change', () => this.refreshCurrentAudio());
+                DOM.voiceSelect.addEventListener('change', () => this.refreshCurrentAudio());
+
+                this.audioEngine.setOnEnded(() => this.handleAudioEnded());
+            }
+
+            static async handleAnalyze() {
+                const text = UIManager.DOM.input.value.trim();
+                if (!text) return UIManager.showModal('请输入一些英语文本后再进行分析。');
+
+                if (AppState.hasAnalyzed && AppState.originalText === text) {
+                    this.togglePlayPause();
                     return;
                 }
 
-                stopPlayback(); 
-                UI.btnAnalyze.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>DeepSeek 分析中...</span>';
-                UI.btnAnalyze.disabled = true;
+                if (CONFIG.WORKER_URL === 'https://您的-worker子域名.workers.dev') {
+                    return UIManager.showModal('请先在代码第 166 行配置您的 Cloudflare Worker 专属链接！');
+                }
+
+                this.stopAll();
+                UIManager.setAnalyzingState(true);
 
                 try {
-                    const aiAnnotatedText = await callDeepSeekAPI(text);
-                    State.sentences = parseAIText(aiAnnotatedText);
-                    State.originalText = text; 
+                    const aiAnnotatedText = await AIService.analyze(text);
+                    AppState.sentences = TextParser.parse(aiAnnotatedText);
+                    AppState.originalText = text;
                     
-                    if (State.sentences.length > 0) {
-                        State.hasAnalyzed = true;
-                        renderAnnotatedText();
-                        setTimeout(() => playSpecificSentence(0), 200);
+                    if (AppState.sentences.length > 0) {
+                        AppState.hasAnalyzed = true;
+                        UIManager.renderSentences(
+                            AppState.sentences, 
+                            (idx, btn) => this.playSentence(idx, btn),
+                            (text, id) => this.playWord(text, id)
+                        );
+                        // 如果想重新生成直接读，取消下方注释
+                        // setTimeout(() => this.playSentence(0), 200);
                     }
                 } catch (error) {
-                    console.error("API Error:", error);
-                    showModal('分析失败: ' + error.message);
+                    console.error("Analysis Error:", error);
+                    UIManager.showModal('分析失败: ' + error.message);
                 } finally {
-                    UI.btnAnalyze.disabled = false;
-                    updateControlsState();
+                    UIManager.setAnalyzingState(false);
                 }
-            });
-
-            if (UI.btnPrev) {
-                UI.btnPrev.addEventListener('click', () => {
-                    if (!State.hasAnalyzed || State.sentences.length === 0) return;
-                    let newIndex = State.currentSentenceIndex - 1;
-                    if (newIndex < 0) newIndex = State.sentences.length - 1; 
-                    playSpecificSentence(newIndex);
-                });
             }
 
-            if (UI.btnNext) {
-                UI.btnNext.addEventListener('click', () => {
-                    if (!State.hasAnalyzed || State.sentences.length === 0) return;
-                    let newIndex = State.currentSentenceIndex + 1;
-                    if (newIndex >= State.sentences.length) newIndex = 0; 
-                    playSpecificSentence(newIndex);
-                });
-            }
+            static async playSentence(index, btnElement = null) {
+                this.stopAll();
+                AppState.currentSentenceIndex = index;
+                UIManager.highlightSentence(index);
+                
+                AppState.isFetchingAudio = true;
+                UIManager.toggleInlineLoading(btnElement, true);
+                UIManager.updateControls();
 
-            UI.btnPlayPause.addEventListener('click', togglePlayPause);
-            UI.btnStop.addEventListener('click', stopPlayback);
-            
-            UI.speedSlider.addEventListener('input', (e) => {
-                const val = parseFloat(e.target.value).toFixed(1);
-                State.speechRate = val;
-                UI.speedValue.textContent = `${val}x`;
-            });
+                const sentenceData = AppState.sentences[index];
+                const voiceType = UIManager.DOM.voiceSelect.value;
 
-            UI.speedSlider.addEventListener('change', () => {
-                // 如果调整语速时正在播放，则用新语速重新请求音频
-                if (State.isPlaying && !State.isPaused) {
-                    playSpecificSentence(State.currentSentenceIndex);
+                try {
+                    await this.audioEngine.playTTS(sentenceData.rawText, voiceType, AppState.speechRate, sentenceData.tokens);
+                    AppState.isFetchingAudio = false;
+                    AppState.isPlaying = true;
+                } catch (error) {
+                    AppState.isFetchingAudio = false;
+                    let errorMsg = error.message;
+                    if (errorMsg.includes('Failed to fetch')) {
+                        errorMsg = '前端跨域请求失败。\n\n【必须的操作】：请确认您部署的 Cloudflare Worker 运行正常，且代码中的 WORKER_URL 填写正确。';
+                    }
+                    UIManager.showModal('获取句子发音失败: \n' + errorMsg);
+                } finally {
+                    UIManager.toggleInlineLoading(btnElement, false);
+                    UIManager.updateControls();
                 }
-            });
-
-            UI.btnClearInput.addEventListener('click', () => {
-                UI.input.value = '';
-                UI.input.focus();
-            });
-
-            UI.btnReset.addEventListener('click', () => {
-                stopPlayback();
-                UI.input.value = '';
-                State.hasAnalyzed = false;
-                State.sentences = [];
-                UI.outputArea.innerHTML = '';
-                UI.outputArea.appendChild(UI.placeholder);
-                updateControlsState();
-                State.speechRate = 1.0;
-                UI.speedSlider.value = 1.0;
-                UI.speedValue.textContent = '1.0x';
-            });
-
-            // ==========================================
-            // 6. 自定义模态框逻辑
-            // ==========================================
-            function showModal(msg) {
-                UI.modalMsg.textContent = msg;
-                UI.modal.classList.remove('hidden');
-                void UI.modal.offsetWidth;
-                UI.modal.classList.remove('opacity-0');
-                UI.modal.querySelector('#modal-content-box').classList.remove('scale-95');
-                UI.modal.querySelector('#modal-content-box').classList.add('scale-100');
             }
 
-            function hideModal() {
-                UI.modal.classList.add('opacity-0');
-                UI.modal.querySelector('#modal-content-box').classList.remove('scale-100');
-                UI.modal.querySelector('#modal-content-box').classList.add('scale-95');
-                setTimeout(() => UI.modal.classList.add('hidden'), 300); 
+            static async playWord(wordText, wordId) {
+                this.stopAll();
+                UIManager.highlightWord(wordId);
+                AppState.isFetchingAudio = true;
+                UIManager.updateControls();
+
+                try {
+                    await this.audioEngine.playTTS(wordText, UIManager.DOM.voiceSelect.value, AppState.speechRate, []);
+                    AppState.isFetchingAudio = false;
+                    AppState.isPlaying = true;
+                } catch (error) {
+                    AppState.isFetchingAudio = false;
+                    let errorMsg = error.message;
+                    if (errorMsg.includes('Failed to fetch')) {
+                        errorMsg = '前端跨域请求失败。\n\n请检查 Cloudflare Worker 代理节点状态。';
+                    }
+                    UIManager.showModal('获取单词发音失败: \n' + errorMsg);
+                } finally {
+                    UIManager.updateControls();
+                }
             }
 
-            UI.btnCloseModal.addEventListener('click', hideModal);
-            UI.modal.addEventListener('click', (e) => { if (e.target === UI.modal) hideModal(); });
-        });
+            static handleAudioEnded() {
+                UIManager.clearHighlights();
+                AppState.isPlaying = false;
+                AppState.isPaused = false;
+                
+                if (AppState.currentSentenceIndex < AppState.sentences.length - 1) {
+                    AppState.currentSentenceIndex++;
+                    UIManager.highlightSentence(AppState.currentSentenceIndex);
+                } else {
+                    AppState.currentSentenceIndex = 0;
+                }
+                UIManager.updateControls();
+            }
+
+            static togglePlayPause() {
+                if (!AppState.hasAnalyzed) return;
+
+                if (AppState.isPlaying) {
+                    if (AppState.isPaused) {
+                        this.audioEngine.resume();
+                        AppState.isPaused = false;
+                    } else {
+                        this.audioEngine.pause();
+                        AppState.isPaused = true;
+                    }
+                    UIManager.updateControls();
+                } else {
+                    this.playSentence(AppState.currentSentenceIndex);
+                }
+            }
+
+            static playRelativeSentence(offset) {
+                if (!AppState.hasAnalyzed || AppState.sentences.length === 0) return;
+                let newIndex = AppState.currentSentenceIndex + offset;
+                if (newIndex < 0) newIndex = AppState.sentences.length - 1;
+                if (newIndex >= AppState.sentences.length) newIndex = 0;
+                this.playSentence(newIndex);
+            }
+
+            static refreshCurrentAudio() {
+                if (AppState.isPlaying && !AppState.isPaused) {
+                    this.playSentence(AppState.currentSentenceIndex);
+                }
+            }
+
+            static stopAll() {
+                this.audioEngine.stop();
+                AppState.isPlaying = false;
+                AppState.isPaused = false;
+                AppState.isFetchingAudio = false;
+                UIManager.clearHighlights();
+                UIManager.resetAllInlineLoadings();
+                UIManager.updateControls();
+            }
+
+            static resetApp() {
+                this.stopAll();
+                UIManager.DOM.input.value = '';
+                AppState.hasAnalyzed = false;
+                AppState.sentences = [];
+                UIManager.DOM.outputArea.innerHTML = '';
+                UIManager.DOM.outputArea.appendChild(UIManager.DOM.placeholder);
+                UIManager.updateControls();
+                AppState.speechRate = 1.0;
+                UIManager.DOM.speedSlider.value = 1.0;
+                UIManager.DOM.speedValue.textContent = '1.0x';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => App.init());
+
     </script>
 </body>
 </html>
