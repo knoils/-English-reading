@@ -242,9 +242,10 @@ Good *morning* / dear *professors* // It is a great *honor* / to be *here* *toda
                             speech_rate: speechRate 
                         },
                         // 【核心优化 2：开启火山引擎服务端缓存】加快服务器合成速度
-                        additions: {
+                        // 【终极修复】：火山引擎严格要求 additions 字段必须是 JSON 字符串，不能是对象
+                        additions: JSON.stringify({
                             cache_config: { text_type: 1, use_cache: true }
-                        }
+                        })
                     }
                 };
 
