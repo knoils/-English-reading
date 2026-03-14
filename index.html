@@ -45,7 +45,7 @@
                     <h1 class="text-xl font-bold text-gray-900">AI 英语朗读与发音助手</h1>
                     <div class="flex items-center gap-2 text-xs font-semibold text-gray-500 mt-0.5">
                         <span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded">流式并发</span>
-                        <span class="bg-green-100 text-green-700 px-2 py-0.5 rounded">IndexedDB 持久化</span>
+                        <span class="bg-green-100 text-green-700 px-2 py-0.5 rounded">意图预加载</span>
                     </div>
                 </div>
             </div>
@@ -176,12 +176,9 @@
             DOUBAO_TOKEN: 'yR1_-pcTRcNJHvaQ_U63R28sTZDOs-5o',
             DOUBAO_RESOURCE_ID: 'seed-tts-2.0', 
             
-            // 【终极修复：智能路由】
-            // 如果在 Zeabur 线上跑，直接用相对路径（同源不跨域）
-            // 如果在本地双击跑，自动指向原版 Cloudflare 代理（需开启科学上网测试）
             WORKER_URL: window.location.protocol === 'file:' 
                 ? 'https://doubao-tts-proxy.franklayden815.workers.dev' 
-                : '', // 留空代表相对路径
+                : '', 
 
             AI_PROMPT: `你是一个专业的英语发音指导专家。
 请对用户输入的英文文本进行发音标注。严格遵循以下规则，直接输出标注后的文本，不要包含任何解释或多余的文字：
@@ -247,7 +244,7 @@ Good *morning* / dear *professors* // It is a great *honor* / to be *here* *toda
             isFetchingAudio: false,
             speechRate: 1.0,
             hasAnalyzed: false,
-            playMode: 'sentence', // 【修复核心1】：增加播放模式标记
+            playMode: 'sentence', 
             
             savePreferences() {
                 const prefs = {
@@ -274,7 +271,7 @@ Good *morning* / dear *professors* // It is a great *honor* / to be *here* *toda
         };
 
         // ==========================================
-        // 4. 指数退避重试请求封装 (【核心修复】：增加 15 秒强制超时机制)
+        // 4. 指数退避重试请求封装 
         // ==========================================
         async function fetchWithRetry(url, options, maxRetries = 3, timeoutMs = 15000) {
             for (let i = 0; i < maxRetries; i++) {
@@ -344,21 +341,17 @@ Good *morning* / dear *professors* // It is a great *honor* / to be *here* *toda
                                 
                                 let splitIndex;
                                 while ((splitIndex = textBuffer.indexOf('//')) !== -1) {
-                                    // 【核心修复1】：切分时不包含 // ，防止被正则拆解为两个短停顿
                                     const completeSentence = textBuffer.slice(0, splitIndex);
                                     textBuffer = textBuffer.slice(splitIndex + 2);
                                     if (completeSentence.trim().length > 0) {
                                         onSentenceYielded(completeSentence);
                                     }
                                 }
-                            } catch (e) { 
-                                // 静默忽略无效的 JSON 碎片
-                            }
+                            } catch (e) { }
                         }
                     }
                 }
                 
-                // 【核心修复2】：处理尾部文本时，剔除可能残留的 // 
                 let leftover = textBuffer.replace(/\/\/+$/, '').trim();
                 if (leftover.length > 0) {
                     onSentenceYielded(leftover);
@@ -482,18 +475,14 @@ Good *morning* / dear *professors* // It is a great *honor* / to be *here* *toda
         // ==========================================
         class TextParser {
             static parseSingle(sStr, sIndex) {
-                // 1. 深度清理 AI 生成的杂质格式 (清理反斜杠转义，例如 \*C++\* 还原为 *C++*)
                 sStr = sStr.replace(/\\\*/g, '*').replace(/\\/g, ''); 
-                // 2. 修正 AI 经常犯的标点符号包裹错误 (例如 *morning,* -> *morning*,)
                 sStr = sStr.replace(/\*+([^*]+?)([,.;:!?]+)\*+/g, '*$1*$2');
-                // 3. 彻底清除意外残留的双斜杠
                 sStr = sStr.replace(/\/\/+/g, '').trim();
                 
                 let cleanSentence = "";
                 const htmlParts = [];
                 const tokens = []; 
                 
-                // 【核心增强】：强化正则！支持匹配多个星号(如 **word**)和下划线，极度宽容地提取核心词汇
                 const tokenRegex = /(?:[\*\_]+\s*([a-zA-Z0-9+#]+(?:[-'’‘´][a-zA-Z0-9+#]+)*)\s*[\*\_]+)|([a-zA-Z0-9+#]+(?:[-'’‘´][a-zA-Z0-9+#]+)*)|(\/)|(\s+)|([^a-zA-Z0-9+#\s\/]+)/g;
                 let match;
 
@@ -517,7 +506,6 @@ Good *morning* / dear *professors* // It is a great *honor* / to be *here* *toda
                         htmlParts.push(match[4].replace(/\n/g, '<br>'));
                         cleanSentence += match[4];
                     } else if (match[5]) {
-                        // 【终极保险】：如果落入其他标点符号，强制剔除其中漏网的星号或下划线，永不让它们显示在屏幕上
                         let punc = match[5].replace(/[\*\_]+/g, '');
                         if (punc) {
                             htmlParts.push(`<span class="text-gray-400 font-medium">${punc}</span>`);
@@ -599,12 +587,50 @@ Good *morning* / dear *professors* // It is a great *honor* / to be *here* *toda
                 });
 
                 div.querySelector('.btn-play-inline').addEventListener('click', (e) => onPlaySentence(parseInt(e.currentTarget.getAttribute('data-index')), e.currentTarget));
+                
+                // 【核心优化：单词事件绑定】
                 div.querySelectorAll('.clickable-word').forEach(wordSpan => {
+                    let hoverTimer = null;
+
+                    // 1. 意图预判：鼠标悬停 0.1 秒即触发静默下载
+                    wordSpan.addEventListener('mouseenter', (e) => {
+                        hoverTimer = setTimeout(() => {
+                            const text = e.currentTarget.getAttribute('data-text');
+                            const voice = document.getElementById('voice-select').value;
+                            TTSService.synthesize(text, voice, AppState.speechRate).catch(()=>{});
+                        }, 100); 
+                    });
+
+                    // 取消意图
+                    wordSpan.addEventListener('mouseleave', () => {
+                        if (hoverTimer) clearTimeout(hoverTimer);
+                    });
+
+                    // 2. 意图预判：移动端手指按下的瞬间即触发下载
+                    wordSpan.addEventListener('touchstart', (e) => {
+                        const text = e.currentTarget.getAttribute('data-text');
+                        const voice = document.getElementById('voice-select').value;
+                        TTSService.synthesize(text, voice, AppState.speechRate).catch(()=>{});
+                    }, { passive: true });
+
+                    // 3. 点击发音
                     wordSpan.addEventListener('click', (e) => {
                         e.stopPropagation();
+                        if (hoverTimer) clearTimeout(hoverTimer);
                         onPlayWord(e.currentTarget.getAttribute('data-text'), e.currentTarget.id);
                     });
                 });
+            }
+
+            // 【微加载动画】：专门给单个单词设置呼吸灯 Loading 效果
+            static setWordLoading(wordId, isLoading) {
+                const wordEl = document.getElementById(wordId);
+                if (!wordEl) return;
+                if (isLoading) {
+                    wordEl.classList.add('animate-pulse', 'bg-blue-100', 'text-blue-800');
+                } else {
+                    wordEl.classList.remove('animate-pulse', 'bg-blue-100', 'text-blue-800');
+                }
             }
 
             static markPreloaded(index) {
@@ -639,8 +665,11 @@ Good *morning* / dear *professors* // It is a great *honor* / to be *here* *toda
                     DOM.iconLoadingMain.classList.remove('hidden');
                     DOM.btnPlayPause.classList.replace('bg-blue-100', 'bg-gray-100');
                     DOM.btnPlayPause.classList.replace('text-blue-600', 'text-gray-600');
-                    DOM.statusText.textContent = `极速调取音频中...`;
-                    DOM.btnAnalyze.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>处理中</span>';
+                    // 如果是单词发音，不改变全局文字状态，保持安静
+                    if (AppState.playMode !== 'word') {
+                        DOM.statusText.textContent = `极速调取音频中...`;
+                        DOM.btnAnalyze.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>处理中</span>';
+                    }
                 } else {
                     DOM.iconLoadingMain.classList.add('hidden');
                     DOM.iconPlayMain.classList.remove('hidden');
@@ -843,7 +872,7 @@ Good *morning* / dear *professors* // It is a great *honor* / to be *here* *toda
             static async playSentence(index, btnElement = null) {
                 this.stopAll();
                 AppState.currentSentenceIndex = index;
-                AppState.playMode = 'sentence'; // 【修复核心2】：标记当前为句子模式
+                AppState.playMode = 'sentence'; 
                 UIManager.highlightSentence(index);
                 
                 AppState.isFetchingAudio = true;
@@ -866,10 +895,15 @@ Good *morning* / dear *professors* // It is a great *honor* / to be *here* *toda
                 }
             }
 
+            // 【单词发音优化】：局部微观 Loading 特效
             static async playWord(wordText, wordId) {
                 this.stopAll();
-                AppState.playMode = 'word'; // 【修复核心3】：标记当前为单词模式
+                AppState.playMode = 'word'; 
                 UIManager.highlightWord(wordId);
+                
+                // 开启被点击单词局部的闪烁 Loading，视觉感受更轻量
+                UIManager.setWordLoading(wordId, true);
+                
                 AppState.isFetchingAudio = true;
                 UIManager.updateControls();
 
@@ -881,6 +915,8 @@ Good *morning* / dear *professors* // It is a great *honor* / to be *here* *toda
                     AppState.isFetchingAudio = false;
                     UIManager.showModal('获取发音失败: \n' + error.message);
                 } finally {
+                    // 关闭单词的闪烁
+                    UIManager.setWordLoading(wordId, false);
                     UIManager.updateControls();
                 }
             }
@@ -890,7 +926,6 @@ Good *morning* / dear *professors* // It is a great *honor* / to be *here* *toda
                 AppState.isPlaying = false;
                 AppState.isPaused = false;
                 
-                // 【修复核心4】：只有在句子模式下，才触发自动连播下一句
                 if (AppState.playMode === 'sentence') {
                     if (AppState.currentSentenceIndex < AppState.sentences.length - 1) {
                         AppState.currentSentenceIndex++;
@@ -901,7 +936,6 @@ Good *morning* / dear *professors* // It is a great *honor* / to be *here* *toda
                         UIManager.updateControls();
                     }
                 } else {
-                    // 单词发音结束，直接重置界面按钮状态即可，不自动连播
                     UIManager.updateControls();
                 }
             }
@@ -936,6 +970,14 @@ Good *morning* / dear *professors* // It is a great *honor* / to be *here* *toda
                 AppState.isFetchingAudio = false;
                 UIManager.clearHighlights();
                 UIManager.resetAllInlineLoadings();
+                
+                // 清理可能遗留的单词闪烁特效
+                document.querySelectorAll('.animate-pulse').forEach(el => {
+                    if(el.id && el.id.startsWith('word-')) {
+                        UIManager.setWordLoading(el.id, false);
+                    }
+                });
+                
                 UIManager.updateControls();
             }
 
