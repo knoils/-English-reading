@@ -35,41 +35,41 @@
 <body class="bg-gray-100 min-h-screen flex flex-col font-sans text-gray-800">
 
     <!-- 顶部导航条 -->
-    <header class="bg-white shadow-sm py-4 px-6 border-b border-gray-200 sticky top-0 z-20">
+    <header class="bg-white shadow-sm py-3 sm:py-4 px-4 sm:px-6 border-b border-gray-200 sticky top-0 z-20">
         <div class="max-w-5xl mx-auto flex items-center justify-between">
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2 sm:gap-3">
                 <div class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-2 rounded-lg flex items-center justify-center shadow-md">
-                    <i class="fas fa-language text-xl"></i>
+                    <i class="fas fa-language text-lg sm:text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold text-gray-900">AI 英语朗读与发音助手</h1>
-                    <div class="flex items-center gap-2 text-xs font-semibold text-gray-500 mt-0.5">
-                        <span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded">流式并发</span>
-                        <span class="bg-green-100 text-green-700 px-2 py-0.5 rounded">意图预加载</span>
+                    <h1 class="text-base sm:text-xl font-bold text-gray-900 truncate">AI 英语朗读与发音助手</h1>
+                    <div class="flex items-center gap-1 sm:gap-2 text-[10px] sm:text-xs font-semibold text-gray-500 mt-0.5">
+                        <span class="bg-blue-100 text-blue-700 px-1.5 sm:px-2 py-0.5 rounded">流式并发</span>
+                        <span class="bg-green-100 text-green-700 px-1.5 sm:px-2 py-0.5 rounded">意图预加载</span>
                     </div>
                 </div>
             </div>
-            <div id="system-status" class="text-xs font-medium text-gray-400 flex items-center gap-2">
-                <i class="fas fa-circle text-green-500 text-[10px]"></i> 系统就绪
+            <div id="system-status" class="text-[10px] sm:text-xs font-medium text-gray-400 flex items-center gap-1 sm:gap-2 whitespace-nowrap ml-2">
+                <i class="fas fa-circle text-green-500 text-[8px] sm:text-[10px]"></i> <span class="hidden sm:inline">系统就绪</span>
             </div>
         </div>
     </header>
 
     <!-- 主要内容区 -->
-    <main class="flex-grow flex flex-col max-w-5xl w-full mx-auto p-4 gap-6">
+    <main class="flex-grow flex flex-col max-w-5xl w-full mx-auto p-3 sm:p-4 gap-4 sm:gap-6">
         
         <!-- 区域 1: 输入区 -->
-        <section class="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 flex flex-col gap-4">
-            <div class="flex justify-between items-end">
-                <label for="text-input" class="block text-sm font-medium text-gray-700">请输入您想学习的英语文本：</label>
-                <button id="btn-clear-input" class="text-sm text-gray-400 hover:text-red-500 transition-colors">
-                    <i class="fas fa-eraser mr-1"></i>清空输入
+        <section class="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-5 flex flex-col gap-3 sm:gap-4">
+            <div class="flex justify-between items-center">
+                <label for="text-input" class="block text-sm sm:text-base font-medium text-gray-700">请输入您想学习的英语文本：</label>
+                <button id="btn-clear-input" class="text-xs sm:text-sm text-gray-400 hover:text-red-500 transition-colors flex items-center">
+                    <i class="fas fa-eraser mr-1"></i><span class="hidden sm:inline">清空输入</span><span class="sm:hidden">清空</span>
                 </button>
             </div>
-            <textarea id="text-input" rows="5" class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-lg resize-y transition-shadow" placeholder="Good morning, dear professors. It is a great honor to be here today..."></textarea>
+            <textarea id="text-input" rows="5" class="w-full p-3 sm:p-4 border border-gray-300 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-base sm:text-lg resize-y transition-shadow" placeholder="Good morning, dear professors. It is a great honor to be here today..."></textarea>
             
-            <div class="flex justify-end">
-                <button id="btn-analyze" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-xl shadow-md hover:shadow-lg transition-all flex items-center gap-2 transform active:scale-95">
+            <div class="flex justify-end mt-1">
+                <button id="btn-analyze" class="w-full sm:w-auto justify-center bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 sm:px-8 rounded-lg sm:rounded-xl shadow-md hover:shadow-lg transition-all flex items-center gap-2 transform active:scale-95">
                     <i class="fas fa-bolt"></i>
                     <span>极速分析与合成</span>
                 </button>
@@ -99,51 +99,56 @@
     </main>
 
     <!-- 区域 3: 底部控制面板 -->
-    <div class="bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] sticky bottom-0 z-30 py-4 px-6">
-        <div class="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-4">
+    <div class="bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] sticky bottom-0 z-30 py-3 sm:py-4 px-4 sm:px-6">
+        <div class="max-w-5xl mx-auto flex flex-col md:flex-row flex-wrap items-center justify-between gap-3 sm:gap-4">
             
-            <div class="flex items-center gap-2">
-                <button id="btn-prev" disabled class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-blue-100 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors" title="上一句">
+            <!-- 播放控制组 -->
+            <div class="flex items-center justify-center w-full md:w-auto gap-2 order-1">
+                <button id="btn-prev" disabled class="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-blue-100 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors" title="上一句">
                     <i class="fas fa-backward-step"></i>
                 </button>
-                <button id="btn-play-pause" disabled class="w-12 h-12 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xl relative" title="播放/暂停本句">
+                <button id="btn-play-pause" disabled class="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-lg sm:text-xl relative" title="播放/暂停本句">
                     <i class="fas fa-play" id="icon-play-main"></i>
                     <i class="fas fa-circle-notch fa-spin hidden absolute" id="icon-loading-main"></i>
                 </button>
-                <button id="btn-next" disabled class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-blue-100 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors" title="下一句">
+                <button id="btn-next" disabled class="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-blue-100 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors" title="下一句">
                     <i class="fas fa-forward-step"></i>
                 </button>
-                <button id="btn-stop" disabled class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-red-100 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-lg ml-1" title="停止">
+                <button id="btn-stop" disabled class="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-red-100 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-base sm:text-lg ml-0 sm:ml-1" title="停止">
                     <i class="fas fa-stop"></i>
                 </button>
-                <div id="status-text" class="text-sm font-medium text-gray-500 ml-2 w-28 truncate">准备就绪</div>
+                <div id="status-text" class="text-xs sm:text-sm font-medium text-gray-500 ml-1 sm:ml-2 w-auto md:w-28 truncate text-center md:text-left">准备就绪</div>
             </div>
 
-            <div class="flex items-center gap-3 bg-gray-50 py-2 px-4 rounded-xl border border-gray-200">
-                <i class="fas fa-user-astronaut text-gray-400"></i>
-                <div class="flex flex-col">
-                    <span class="text-xs text-gray-500 font-medium mb-1">音色 (Voice)</span>
-                    <select id="voice-select" class="bg-transparent text-sm font-bold outline-none cursor-pointer text-gray-700">
-                        <option value="en_male_tim_uranus_bigtts">Tim (美式男声)</option>
-                        <option value="en_female_dacey_uranus_bigtts" selected>Dacey (美式女声)</option>
-                        <option value="en_female_stokie_uranus_bigtts">Stokie (美式女声)</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="flex items-center gap-3 flex-grow max-w-sm bg-gray-50 py-2 px-4 rounded-xl border border-gray-200">
-                <i class="fas fa-turtle text-gray-400"></i>
-                <div class="flex-grow flex flex-col">
-                    <div class="flex justify-between text-xs text-gray-500 font-medium mb-1">
-                        <span>语速 (Speed)</span>
-                        <span id="speed-value">1.0x</span>
+            <!-- 设定参数组 (音色 & 语速) -->
+            <div class="flex flex-col sm:flex-row items-center w-full md:w-auto gap-2 sm:gap-3 order-2 flex-grow justify-center">
+                <div class="flex items-center gap-2 sm:gap-3 w-full sm:w-auto bg-gray-50 py-2 px-3 sm:px-4 rounded-lg sm:rounded-xl border border-gray-200 justify-between">
+                    <i class="fas fa-user-astronaut text-gray-400 hidden sm:block"></i>
+                    <div class="flex flex-row sm:flex-col items-center sm:items-start w-full sm:w-auto justify-between sm:justify-start">
+                        <span class="text-[10px] sm:text-xs text-gray-500 font-medium sm:mb-1">音色 (Voice)</span>
+                        <select id="voice-select" class="bg-transparent text-xs sm:text-sm font-bold outline-none cursor-pointer text-gray-700 text-right sm:text-left w-auto">
+                            <option value="en_male_tim_uranus_bigtts">Tim (美式男声)</option>
+                            <option value="en_female_dacey_uranus_bigtts" selected>Dacey (美式女声)</option>
+                            <option value="en_female_stokie_uranus_bigtts">Stokie (美式女声)</option>
+                        </select>
                     </div>
-                    <input type="range" id="speed-slider" min="0.5" max="2.0" step="0.1" value="1.0" class="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-blue-600">
                 </div>
-                <i class="fas fa-rabbit text-gray-400"></i>
+
+                <div class="flex items-center gap-2 sm:gap-3 flex-grow w-full sm:w-auto sm:max-w-sm bg-gray-50 py-2 px-3 sm:px-4 rounded-lg sm:rounded-xl border border-gray-200">
+                    <i class="fas fa-turtle text-gray-400 hidden sm:block"></i>
+                    <div class="flex-grow flex flex-col w-full">
+                        <div class="flex justify-between text-[10px] sm:text-xs text-gray-500 font-medium mb-1">
+                            <span>语速 (Speed)</span>
+                            <span id="speed-value">1.0x</span>
+                        </div>
+                        <input type="range" id="speed-slider" min="0.5" max="2.0" step="0.1" value="1.0" class="w-full h-1.5 sm:h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                    </div>
+                    <i class="fas fa-rabbit text-gray-400 hidden sm:block"></i>
+                </div>
             </div>
 
-            <button id="btn-reset" class="px-5 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors shadow-sm">
+            <!-- 重新开始按钮 -->
+            <button id="btn-reset" class="w-full md:w-auto order-3 px-4 py-2 sm:px-5 sm:py-2 text-xs sm:text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors shadow-sm flex items-center justify-center">
                 <i class="fas fa-rotate-right mr-1"></i> 重新开始
             </button>
         </div>
@@ -930,7 +935,8 @@ Good *morning* / dear *professors* // It is a great *honor* / to be *here* *toda
                     if (AppState.currentSentenceIndex < AppState.sentences.length - 1) {
                         AppState.currentSentenceIndex++;
                         UIManager.highlightSentence(AppState.currentSentenceIndex);
-                        this.playSentence(AppState.currentSentenceIndex); 
+                        // 【优化1】：移除自动连播。现在高亮会自动跳转到下一句，等您点击播放再继续
+                        UIManager.updateControls();
                     } else {
                         AppState.currentSentenceIndex = 0;
                         UIManager.updateControls();
