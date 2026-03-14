@@ -482,13 +482,19 @@ Good *morning* / dear *professors* // It is a great *honor* / to be *here* *toda
         // ==========================================
         class TextParser {
             static parseSingle(sStr, sIndex) {
-                // 【双保险】：如果传入的字符串里意外带有 //，彻底清除它
+                // 1. 深度清理 AI 生成的杂质格式 (清理反斜杠转义，例如 \*C++\* 还原为 *C++*)
+                sStr = sStr.replace(/\\\*/g, '*').replace(/\\/g, ''); 
+                // 2. 修正 AI 经常犯的标点符号包裹错误 (例如 *morning,* -> *morning*,)
+                sStr = sStr.replace(/\*+([^*]+?)([,.;:!?]+)\*+/g, '*$1*$2');
+                // 3. 彻底清除意外残留的双斜杠
                 sStr = sStr.replace(/\/\/+/g, '').trim();
                 
                 let cleanSentence = "";
                 const htmlParts = [];
                 const tokens = []; 
-                const tokenRegex = /(?:\*\*?\s*([a-zA-Z0-9+#]+(?:[-'’‘´][a-zA-Z0-9+#]+)*)\s*\*\*?)|([a-zA-Z0-9+#]+(?:[-'’‘´][a-zA-Z0-9+#]+)*)|(\/)|(\s+)|([^a-zA-Z0-9+#\s\/]+)/g;
+                
+                // 【核心增强】：强化正则！支持匹配多个星号(如 **word**)和下划线，极度宽容地提取核心词汇
+                const tokenRegex = /(?:[\*\_]+\s*([a-zA-Z0-9+#]+(?:[-'’‘´][a-zA-Z0-9+#]+)*)\s*[\*\_]+)|([a-zA-Z0-9+#]+(?:[-'’‘´][a-zA-Z0-9+#]+)*)|(\/)|(\s+)|([^a-zA-Z0-9+#\s\/]+)/g;
                 let match;
 
                 while ((match = tokenRegex.exec(sStr)) !== null) {
@@ -511,8 +517,12 @@ Good *morning* / dear *professors* // It is a great *honor* / to be *here* *toda
                         htmlParts.push(match[4].replace(/\n/g, '<br>'));
                         cleanSentence += match[4];
                     } else if (match[5]) {
-                        htmlParts.push(`<span class="text-gray-400 font-medium">${match[5]}</span>`);
-                        cleanSentence += match[5];
+                        // 【终极保险】：如果落入其他标点符号，强制剔除其中漏网的星号或下划线，永不让它们显示在屏幕上
+                        let punc = match[5].replace(/[\*\_]+/g, '');
+                        if (punc) {
+                            htmlParts.push(`<span class="text-gray-400 font-medium">${punc}</span>`);
+                            cleanSentence += punc;
+                        }
                     }
                 }
                 htmlParts.push(`<span class="text-black font-extrabold mx-2 select-none">//</span>`);
