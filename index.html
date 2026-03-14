@@ -36,7 +36,7 @@
             </div>
             <div>
                 <h1 class="text-xl font-bold text-gray-900">AI 英语朗读与发音助手</h1>
-                <p class="text-sm text-gray-500">DeepSeek 语义分析 · 极速预加载引擎</p>
+                <p class="text-sm text-gray-500">DeepSeek 语义分析 · knoils制作</p>
             </div>
         </div>
     </header>
@@ -581,4 +581,233 @@ Good *morning* / dear *professors* // It is a great *honor* / to be *here* *toda
             async playTTS(text, voiceType, speechRate, tokens = []) {
                 this.stop();
                 this.currentTokens = tokens;
-   
+                
+                const audioUrl = await TTSService.synthesize(text, voiceType, speechRate);
+                this.audio.src = audioUrl;
+                await this.audio.play();
+            }
+
+            pause() { this.audio.pause(); }
+            resume() { this.audio.play(); }
+            
+            stop() {
+                this.audio.pause();
+                this.audio.currentTime = 0;
+                this.currentTokens = [];
+            }
+
+            setOnEnded(callback) {
+                this.onEndedCallback = callback;
+            }
+
+            _handleTimeUpdate() {
+                if (!this.audio.duration || this.currentTokens.length === 0) return;
+                const progress = this.audio.currentTime / this.audio.duration;
+                const wordIndex = Math.min(Math.floor(progress * this.currentTokens.length), this.currentTokens.length - 1);
+                if (this.currentTokens[wordIndex]) {
+                    UIManager.highlightWord(this.currentTokens[wordIndex].id);
+                }
+            }
+
+            _handleEnded() {
+                if (this.onEndedCallback) this.onEndedCallback();
+            }
+        }
+
+        // ==========================================
+        // 8. 主应用控制器 (App Controller)
+        // ==========================================
+        class App {
+            static init() {
+                this.audioEngine = new AudioEngine();
+                this.bindEvents();
+            }
+
+            static bindEvents() {
+                const DOM = UIManager.DOM;
+                
+                DOM.btnAnalyze.addEventListener('click', () => this.handleAnalyze());
+                DOM.btnPlayPause.addEventListener('click', () => this.togglePlayPause());
+                DOM.btnStop.addEventListener('click', () => this.stopAll());
+                DOM.btnPrev.addEventListener('click', () => this.playRelativeSentence(-1));
+                DOM.btnNext.addEventListener('click', () => this.playRelativeSentence(1));
+                DOM.btnClearInput.addEventListener('click', () => { DOM.input.value = ''; DOM.input.focus(); });
+                DOM.btnReset.addEventListener('click', () => this.resetApp());
+                DOM.btnCloseModal.addEventListener('click', () => UIManager.hideModal());
+                DOM.modal.addEventListener('click', (e) => { if (e.target === DOM.modal) UIManager.hideModal(); });
+
+                DOM.speedSlider.addEventListener('input', (e) => {
+                    const val = parseFloat(e.target.value).toFixed(1);
+                    AppState.speechRate = val;
+                    DOM.speedValue.textContent = `${val}x`;
+                });
+
+                DOM.speedSlider.addEventListener('change', () => this.refreshCurrentAudio());
+                DOM.voiceSelect.addEventListener('change', () => this.refreshCurrentAudio());
+
+                this.audioEngine.setOnEnded(() => this.handleAudioEnded());
+            }
+
+            static async handleAnalyze() {
+                const text = UIManager.DOM.input.value.trim();
+                if (!text) return UIManager.showModal('请输入一些英语文本后再进行分析。');
+
+                if (AppState.hasAnalyzed && AppState.originalText === text) {
+                    this.togglePlayPause();
+                    return;
+                }
+
+                this.stopAll();
+                UIManager.setAnalyzingState(true);
+
+                try {
+                    const aiAnnotatedText = await AIService.analyze(text);
+                    AppState.sentences = TextParser.parse(aiAnnotatedText);
+                    AppState.originalText = text;
+                    
+                    if (AppState.sentences.length > 0) {
+                        AppState.hasAnalyzed = true;
+                        UIManager.renderSentences(
+                            AppState.sentences, 
+                            (idx, btn) => this.playSentence(idx, btn),
+                            (text, id) => this.playWord(text, id)
+                        );
+                        
+                        // 【核心优化 3：静默预加载】
+                        // 当文本分析完毕，您还在阅读第一句内容时，浏览器就已经偷偷在后台为您下载第一句话的发音了！
+                        const firstSentence = AppState.sentences[0];
+                        TTSService.synthesize(firstSentence.rawText, UIManager.DOM.voiceSelect.value, AppState.speechRate)
+                            .catch(e => console.warn("预加载第一句失败", e));
+                    }
+                } catch (error) {
+                    console.error("Analysis Error:", error);
+                    UIManager.showModal('分析失败: ' + error.message);
+                } finally {
+                    UIManager.setAnalyzingState(false);
+                }
+            }
+
+            static async playSentence(index, btnElement = null) {
+                this.stopAll();
+                AppState.currentSentenceIndex = index;
+                UIManager.highlightSentence(index);
+                
+                AppState.isFetchingAudio = true;
+                UIManager.toggleInlineLoading(btnElement, true);
+                UIManager.updateControls();
+
+                const sentenceData = AppState.sentences[index];
+                const voiceType = UIManager.DOM.voiceSelect.value;
+
+                // 【核心优化 4：流水线预加载下一句】
+                // 当开始播放当前句时，立刻偷偷预加载下一句的音频，保证顺畅的流水线式体验
+                if (index + 1 < AppState.sentences.length) {
+                    const nextSentence = AppState.sentences[index + 1];
+                    TTSService.synthesize(nextSentence.rawText, voiceType, AppState.speechRate).catch(() => {});
+                }
+
+                try {
+                    await this.audioEngine.playTTS(sentenceData.rawText, voiceType, AppState.speechRate, sentenceData.tokens);
+                    AppState.isFetchingAudio = false;
+                    AppState.isPlaying = true;
+                } catch (error) {
+                    AppState.isFetchingAudio = false;
+                    UIManager.showModal('获取句子发音失败: \n' + error.message);
+                } finally {
+                    UIManager.toggleInlineLoading(btnElement, false);
+                    UIManager.updateControls();
+                }
+            }
+
+            static async playWord(wordText, wordId) {
+                this.stopAll();
+                UIManager.highlightWord(wordId);
+                AppState.isFetchingAudio = true;
+                UIManager.updateControls();
+
+                try {
+                    await this.audioEngine.playTTS(wordText, UIManager.DOM.voiceSelect.value, AppState.speechRate, []);
+                    AppState.isFetchingAudio = false;
+                    AppState.isPlaying = true;
+                } catch (error) {
+                    AppState.isFetchingAudio = false;
+                    UIManager.showModal('获取单词发音失败: \n' + error.message);
+                } finally {
+                    UIManager.updateControls();
+                }
+            }
+
+            static handleAudioEnded() {
+                UIManager.clearHighlights();
+                AppState.isPlaying = false;
+                AppState.isPaused = false;
+                
+                if (AppState.currentSentenceIndex < AppState.sentences.length - 1) {
+                    AppState.currentSentenceIndex++;
+                    UIManager.highlightSentence(AppState.currentSentenceIndex);
+                } else {
+                    AppState.currentSentenceIndex = 0;
+                }
+                UIManager.updateControls();
+            }
+
+            static togglePlayPause() {
+                if (!AppState.hasAnalyzed) return;
+
+                if (AppState.isPlaying) {
+                    if (AppState.isPaused) {
+                        this.audioEngine.resume();
+                        AppState.isPaused = false;
+                    } else {
+                        this.audioEngine.pause();
+                        AppState.isPaused = true;
+                    }
+                    UIManager.updateControls();
+                } else {
+                    this.playSentence(AppState.currentSentenceIndex);
+                }
+            }
+
+            static playRelativeSentence(offset) {
+                if (!AppState.hasAnalyzed || AppState.sentences.length === 0) return;
+                let newIndex = AppState.currentSentenceIndex + offset;
+                if (newIndex < 0) newIndex = AppState.sentences.length - 1;
+                if (newIndex >= AppState.sentences.length) newIndex = 0;
+                this.playSentence(newIndex);
+            }
+
+            static refreshCurrentAudio() {
+                if (AppState.isPlaying && !AppState.isPaused) {
+                    this.playSentence(AppState.currentSentenceIndex);
+                }
+            }
+
+            static stopAll() {
+                this.audioEngine.stop();
+                AppState.isPlaying = false;
+                AppState.isPaused = false;
+                AppState.isFetchingAudio = false;
+                UIManager.clearHighlights();
+                UIManager.resetAllInlineLoadings();
+                UIManager.updateControls();
+            }
+
+            static resetApp() {
+                this.stopAll();
+                UIManager.DOM.input.value = '';
+                AppState.hasAnalyzed = false;
+                AppState.sentences = [];
+                UIManager.DOM.outputArea.innerHTML = '';
+                UIManager.DOM.outputArea.appendChild(UIManager.DOM.placeholder);
+                UIManager.updateControls();
+                AppState.speechRate = 1.0;
+                UIManager.DOM.speedSlider.value = 1.0;
+                UIManager.DOM.speedValue.textContent = '1.0x';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => App.init());
+
+    </script>
+</body>
+</html>
