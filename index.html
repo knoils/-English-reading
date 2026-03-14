@@ -176,7 +176,12 @@
             DOUBAO_TOKEN: 'yR1_-pcTRcNJHvaQ_U63R28sTZDOs-5o',
             DOUBAO_RESOURCE_ID: 'seed-tts-2.0', 
             
-            WORKER_URL: '', 
+            // 【终极修复：智能路由】
+            // 如果在 Zeabur 线上跑，直接用相对路径（同源不跨域）
+            // 如果在本地双击跑，自动指向原版 Cloudflare 代理（需开启科学上网测试）
+            WORKER_URL: window.location.protocol === 'file:' 
+                ? 'https://doubao-tts-proxy.franklayden815.workers.dev' 
+                : '', // 留空代表相对路径
 
             AI_PROMPT: `你是一个专业的英语发音指导专家。
 请对用户输入的英文文本进行发音标注。严格遵循以下规则，直接输出标注后的文本，不要包含任何解释或多余的文字：
@@ -316,7 +321,7 @@ Good *morning* / dear *professors* // It is a great *honor* / to be *here* *toda
 
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder("utf-8");
-                let streamBuffer = ""; // 【核心修复】：流式碎片拼接池
+                let streamBuffer = ""; 
                 let textBuffer = "";
 
                 while (true) {
@@ -326,7 +331,6 @@ Good *morning* / dear *professors* // It is a great *honor* / to be *here* *toda
                     streamBuffer += decoder.decode(value, { stream: true });
                     const lines = streamBuffer.split('\n');
                     
-                    // 把最后一行可能不完整的字符串退回池子，等下个块拼完整
                     streamBuffer = lines.pop(); 
                     
                     for (const line of lines) {
@@ -339,9 +343,12 @@ Good *morning* / dear *professors* // It is a great *honor* / to be *here* *toda
                                 
                                 let splitIndex;
                                 while ((splitIndex = textBuffer.indexOf('//')) !== -1) {
-                                    const completeSentence = textBuffer.slice(0, splitIndex + 2);
+                                    // 【核心修复1】：切分时不包含 // ，防止被正则拆解为两个短停顿
+                                    const completeSentence = textBuffer.slice(0, splitIndex);
                                     textBuffer = textBuffer.slice(splitIndex + 2);
-                                    onSentenceYielded(completeSentence);
+                                    if (completeSentence.trim().length > 0) {
+                                        onSentenceYielded(completeSentence);
+                                    }
                                 }
                             } catch (e) { 
                                 // 静默忽略无效的 JSON 碎片
@@ -350,8 +357,10 @@ Good *morning* / dear *professors* // It is a great *honor* / to be *here* *toda
                     }
                 }
                 
-                if (textBuffer.trim().length > 0) {
-                    onSentenceYielded(textBuffer + ' //');
+                // 【核心修复2】：处理尾部文本时，剔除可能残留的 // 
+                let leftover = textBuffer.replace(/\/\/+$/, '').trim();
+                if (leftover.length > 0) {
+                    onSentenceYielded(leftover);
                 }
                 UIManager.setStatus('解析完成', 'text-green-500');
             }
@@ -472,7 +481,9 @@ Good *morning* / dear *professors* // It is a great *honor* / to be *here* *toda
         // ==========================================
         class TextParser {
             static parseSingle(sStr, sIndex) {
-                sStr = sStr.trim();
+                // 【双保险】：如果传入的字符串里意外带有 //，彻底清除它
+                sStr = sStr.replace(/\/\/+/g, '').trim();
+                
                 let cleanSentence = "";
                 const htmlParts = [];
                 const tokens = []; 
