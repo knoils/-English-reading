@@ -175,7 +175,8 @@
             DOUBAO_APPID: '1653093516',
             DOUBAO_TOKEN: 'yR1_-pcTRcNJHvaQ_U63R28sTZDOs-5o',
             DOUBAO_RESOURCE_ID: 'seed-tts-2.0', 
-            WORKER_URL: '', // Zeabur 同源代理留空
+            
+            WORKER_URL: 'https://englishreading.zeabur.app', 
 
             AI_PROMPT: `你是一个专业的英语发音指导专家。
 请对用户输入的英文文本进行发音标注。严格遵循以下规则，直接输出标注后的文本，不要包含任何解释或多余的文字：
@@ -242,7 +243,6 @@ Good *morning* / dear *professors* // It is a great *honor* / to be *here* *toda
             speechRate: 1.0,
             hasAnalyzed: false,
             
-            // 存取偏好设置
             savePreferences() {
                 const prefs = {
                     text: UIManager.DOM.input.value,
@@ -268,17 +268,24 @@ Good *morning* / dear *professors* // It is a great *honor* / to be *here* *toda
         };
 
         // ==========================================
-        // 4. 指数退避重试请求封装
+        // 4. 指数退避重试请求封装 (【核心修复】：增加 15 秒强制超时机制)
         // ==========================================
-        async function fetchWithRetry(url, options, maxRetries = 3) {
+        async function fetchWithRetry(url, options, maxRetries = 3, timeoutMs = 15000) {
             for (let i = 0; i < maxRetries; i++) {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
                 try {
-                    const response = await fetch(url, options);
+                    const response = await fetch(url, { ...options, signal: controller.signal });
+                    clearTimeout(timeoutId);
                     if (!response.ok) throw new Error(`HTTP ${response.status}: ${await response.text()}`);
                     return response;
                 } catch (error) {
-                    if (i === maxRetries - 1) throw error;
-                    await new Promise(r => setTimeout(r, Math.pow(2, i) * 1000)); // 1s, 2s, 4s...
+                    clearTimeout(timeoutId);
+                    const isTimeout = error.name === 'AbortError' || error.message.includes('timeout');
+                    if (i === maxRetries - 1) {
+                        throw new Error(isTimeout ? '网络请求超时，请检查网络或稍后重试' : error.message);
+                    }
+                    await new Promise(r => setTimeout(r, Math.pow(2, i) * 1000));
                 }
             }
         }
@@ -302,44 +309,49 @@ Good *morning* / dear *professors* // It is a great *honor* / to be *here* *toda
                             { role: 'system', content: CONFIG.AI_PROMPT },
                             { role: 'user', content: text }
                         ],
-                        stream: true, // 核心：开启 SSE 流式输出
+                        stream: true,
                         temperature: 0.3
                     })
                 });
 
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder("utf-8");
-                let buffer = "";
+                let streamBuffer = ""; // 【核心修复】：流式碎片拼接池
+                let textBuffer = "";
 
                 while (true) {
                     const { done, value } = await reader.read();
                     if (done) break;
                     
-                    const chunk = decoder.decode(value, { stream: true });
-                    const lines = chunk.split('\n');
+                    streamBuffer += decoder.decode(value, { stream: true });
+                    const lines = streamBuffer.split('\n');
+                    
+                    // 把最后一行可能不完整的字符串退回池子，等下个块拼完整
+                    streamBuffer = lines.pop(); 
                     
                     for (const line of lines) {
-                        if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+                        const trimmedLine = line.trim();
+                        if (trimmedLine.startsWith('data: ') && trimmedLine !== 'data: [DONE]') {
                             try {
-                                const data = JSON.parse(line.slice(6));
+                                const data = JSON.parse(trimmedLine.slice(6));
                                 const delta = data.choices[0]?.delta?.content || "";
-                                buffer += delta;
+                                textBuffer += delta;
                                 
-                                // 【流水线核心】：一旦拼凑出完整的句子（//结尾），立即分割并推送到前端！
                                 let splitIndex;
-                                while ((splitIndex = buffer.indexOf('//')) !== -1) {
-                                    const completeSentence = buffer.slice(0, splitIndex + 2);
-                                    buffer = buffer.slice(splitIndex + 2);
-                                    onSentenceYielded(completeSentence); // 触发 UI 渲染和 TTS 预加载
+                                while ((splitIndex = textBuffer.indexOf('//')) !== -1) {
+                                    const completeSentence = textBuffer.slice(0, splitIndex + 2);
+                                    textBuffer = textBuffer.slice(splitIndex + 2);
+                                    onSentenceYielded(completeSentence);
                                 }
-                            } catch (e) { /* 解析块错误忽略 */ }
+                            } catch (e) { 
+                                // 静默忽略无效的 JSON 碎片
+                            }
                         }
                     }
                 }
                 
-                // 处理尾部没有双斜杠的剩余文本
-                if (buffer.trim().length > 0) {
-                    onSentenceYielded(buffer + ' //');
+                if (textBuffer.trim().length > 0) {
+                    onSentenceYielded(textBuffer + ' //');
                 }
                 UIManager.setStatus('解析完成', 'text-green-500');
             }
@@ -349,22 +361,17 @@ Good *morning* / dear *professors* // It is a great *honor* / to be *here* *toda
         // 6. 极致 TTS 语音服务 (并发控制 + 三级缓存)
         // ==========================================
         class TTSService {
-            static memoryCache = new Map(); // 一级：内存 Blob URL 缓存
-            static promiseCache = new Map(); // 正在下载中的任务 Promise 防重
-            static activeDownloads = 0; // 并发控制器
-            static MAX_CONCURRENT = 3;  // 最大同时请求数
+            static memoryCache = new Map();
+            static promiseCache = new Map();
+            static activeDownloads = 0;
+            static MAX_CONCURRENT = 3;
 
             static async synthesize(text, voiceType, speed) {
-                // 哈希唯一 Key
                 const cacheKey = await this._sha256(`${text}_${voiceType}_${speed}`);
                 
-                // 一级缓存：内存命中
                 if (this.memoryCache.has(cacheKey)) return this.memoryCache.get(cacheKey);
-                
-                // Promise 防重：如果这个请求已经在下载中了，直接挂载等待，不发新请求
                 if (this.promiseCache.has(cacheKey)) return this.promiseCache.get(cacheKey);
 
-                // 二级缓存：IndexedDB 命中 (页面刷新后依然有效)
                 try {
                     const dbBlob = await LocalDB.get(cacheKey);
                     if (dbBlob) {
@@ -374,9 +381,7 @@ Good *morning* / dear *professors* // It is a great *honor* / to be *here* *toda
                     }
                 } catch(e) {}
 
-                // 三级：网络请求 (加入并发排队机制)
                 const fetchTask = async () => {
-                    // 并发节流，等待空闲槽位
                     while(this.activeDownloads >= this.MAX_CONCURRENT) {
                         await new Promise(r => setTimeout(r, 100));
                     }
@@ -390,7 +395,6 @@ Good *morning* / dear *professors* // It is a great *honor* / to be *here* *toda
                                 text: text,
                                 speaker: voiceType,
                                 audio_params: { format: "mp3", sample_rate: 24000, speech_rate: speechRate },
-                                // 强制要求 JSON 字符串格式的缓存参数
                                 additions: JSON.stringify({ cache_config: { text_type: 1, use_cache: true } })
                             }
                         };
@@ -409,15 +413,14 @@ Good *morning* / dear *professors* // It is a great *honor* / to be *here* *toda
 
                         const blob = await this._parseChunkedToBlob(await response.text());
                         
-                        // 保存入缓存
                         const url = URL.createObjectURL(blob);
                         this.memoryCache.set(cacheKey, url);
-                        LocalDB.put(cacheKey, blob).catch(()=>{}); // 异步存入 IndexedDB
+                        LocalDB.put(cacheKey, blob).catch(()=>{});
                         
                         return url;
                     } finally {
                         this.activeDownloads--;
-                        this.promiseCache.delete(cacheKey); // 释放防重锁
+                        this.promiseCache.delete(cacheKey);
                     }
                 };
 
@@ -426,7 +429,6 @@ Good *morning* / dear *professors* // It is a great *honor* / to be *here* *toda
                 return promise;
             }
 
-            // 火山 Chunk 报文精细解析
             static async _parseChunkedToBlob(responseText) {
                 const audioChunks = [];
                 const lines = responseText.split('\n');
@@ -453,14 +455,12 @@ Good *morning* / dear *professors* // It is a great *honor* / to be *here* *toda
                 return new Blob([fullAudio], { type: 'audio/mp3' });
             }
 
-            // 极速离线 Hash 算法
             static async _sha256(message) {
                 const msgBuffer = new TextEncoder().encode(message);
                 const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
                 return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
             }
             
-            // 内存泄漏终结者
             static clearMemoryURLs() {
                 this.memoryCache.forEach(url => URL.revokeObjectURL(url));
                 this.memoryCache.clear();
@@ -545,9 +545,13 @@ Good *morning* / dear *professors* // It is a great *honor* / to be *here* *toda
             }
 
             static prepareStreamUI() {
-                this.DOM.outputArea.innerHTML = '';
-                this.DOM.outputArea.appendChild(this.DOM.streamCursor);
-                this.DOM.streamCursor.classList.remove('hidden');
+                const DOM = this.DOM;
+                DOM.outputArea.querySelectorAll('.sentence-block').forEach(el => el.remove());
+                if (DOM.placeholder) DOM.placeholder.classList.add('hidden');
+                if (DOM.streamCursor) {
+                    DOM.outputArea.appendChild(DOM.streamCursor);
+                    DOM.streamCursor.classList.remove('hidden');
+                }
             }
 
             static appendSentence(sentence, onPlaySentence, onPlayWord) {
@@ -562,14 +566,12 @@ Good *morning* / dear *professors* // It is a great *honor* / to be *here* *toda
                             <i class="fas fa-circle-notch fa-spin hidden absolute icon-load"></i>
                         </button>
                         <div class="flex-grow pt-1 leading-relaxed">${sentence.html}</div>
-                        <!-- 预加载指示器 -->
                         <div id="preload-dot-${sentence.index}" class="w-2 h-2 rounded-full bg-gray-300 mt-2" title="等待预加载..."></div>
                     </div>
                 `;
                 
                 DOM.outputArea.insertBefore(div, DOM.streamCursor);
                 
-                // 入场动画
                 requestAnimationFrame(() => {
                     div.classList.remove('opacity-0', 'translate-y-2');
                 });
@@ -727,9 +729,9 @@ Good *morning* / dear *professors* // It is a great *honor* / to be *here* *toda
         // ==========================================
         class App {
             static async init() {
-                await LocalDB.init(); // 初始化本地数据库
+                await LocalDB.init();
                 this.audioEngine = new AudioEngine();
-                AppState.loadPreferences(); // 还原上次设置
+                AppState.loadPreferences();
                 this.bindEvents();
             }
 
@@ -757,7 +759,6 @@ Good *morning* / dear *professors* // It is a great *honor* / to be *here* *toda
                 this.audioEngine.setOnEnded(() => this.handleAudioEnded());
             }
 
-            // 【流水线核心】：独立后台唤醒全部未加载项
             static async reTriggerPreload() {
                 if (!AppState.hasAnalyzed) return;
                 const voice = UIManager.DOM.voiceSelect.value;
@@ -765,7 +766,6 @@ Good *morning* / dear *professors* // It is a great *honor* / to be *here* *toda
                 
                 for(let i=0; i<AppState.sentences.length; i++) {
                     const sen = AppState.sentences[i];
-                    // 并发排队发起预加载，利用底层的 PromiseCache 防重
                     TTSService.synthesize(sen.rawText, voice, speed)
                         .then(() => UIManager.markPreloaded(sen.index))
                         .catch(() => {});
@@ -788,13 +788,12 @@ Good *morning* / dear *professors* // It is a great *honor* / to be *here* *toda
                 AppState.sentences = [];
                 AppState.originalText = text;
                 AppState.hasAnalyzed = true;
-                TTSService.clearMemoryURLs(); // 释放旧内存
+                TTSService.clearMemoryURLs(); 
                 
                 UIManager.prepareStreamUI();
 
                 try {
                     await AIService.analyzeStream(text, (rawSentenceText) => {
-                        // 回调：每当 AI 吐出一个完整句子，立即渲染并预加载！
                         const index = AppState.sentences.length;
                         const parsedObj = TextParser.parseSingle(rawSentenceText, index);
                         AppState.sentences.push(parsedObj);
@@ -805,14 +804,10 @@ Good *morning* / dear *professors* // It is a great *honor* / to be *here* *toda
                             (wText, id) => this.playWord(wText, id)
                         );
 
-                        // 独立后台静默下载这句刚出来的音频
                         const voice = UIManager.DOM.voiceSelect.value;
                         TTSService.synthesize(parsedObj.rawText, voice, AppState.speechRate)
                             .then(() => UIManager.markPreloaded(index))
                             .catch(e => console.warn(`预加载 ${index} 失败`, e));
-                        
-                        // 可选：第一句生成完毕后自动播放
-                        // if(index === 0) this.playSentence(0);
                     });
                 } catch (error) {
                     UIManager.showModal('流式分析中断: ' + error.message);
@@ -874,7 +869,6 @@ Good *morning* / dear *professors* // It is a great *honor* / to be *here* *toda
                 if (AppState.currentSentenceIndex < AppState.sentences.length - 1) {
                     AppState.currentSentenceIndex++;
                     UIManager.highlightSentence(AppState.currentSentenceIndex);
-                    // 自动连播！因为有了预加载，连播会极其顺畅
                     this.playSentence(AppState.currentSentenceIndex); 
                 } else {
                     AppState.currentSentenceIndex = 0;
@@ -920,8 +914,11 @@ Good *morning* / dear *professors* // It is a great *honor* / to be *here* *toda
                 UIManager.DOM.input.value = '';
                 AppState.hasAnalyzed = false;
                 AppState.sentences = [];
-                UIManager.DOM.outputArea.innerHTML = '';
-                UIManager.DOM.outputArea.appendChild(UIManager.DOM.placeholder);
+                
+                UIManager.DOM.outputArea.querySelectorAll('.sentence-block').forEach(el => el.remove());
+                if (UIManager.DOM.placeholder) UIManager.DOM.placeholder.classList.remove('hidden');
+                if (UIManager.DOM.streamCursor) UIManager.DOM.streamCursor.classList.add('hidden');
+                
                 TTSService.clearMemoryURLs();
                 UIManager.updateControls();
                 AppState.speechRate = 1.0;
