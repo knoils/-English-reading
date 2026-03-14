@@ -247,6 +247,7 @@ Good *morning* / dear *professors* // It is a great *honor* / to be *here* *toda
             isFetchingAudio: false,
             speechRate: 1.0,
             hasAnalyzed: false,
+            playMode: 'sentence', // 【修复核心1】：增加播放模式标记
             
             savePreferences() {
                 const prefs = {
@@ -832,6 +833,7 @@ Good *morning* / dear *professors* // It is a great *honor* / to be *here* *toda
             static async playSentence(index, btnElement = null) {
                 this.stopAll();
                 AppState.currentSentenceIndex = index;
+                AppState.playMode = 'sentence'; // 【修复核心2】：标记当前为句子模式
                 UIManager.highlightSentence(index);
                 
                 AppState.isFetchingAudio = true;
@@ -856,6 +858,7 @@ Good *morning* / dear *professors* // It is a great *honor* / to be *here* *toda
 
             static async playWord(wordText, wordId) {
                 this.stopAll();
+                AppState.playMode = 'word'; // 【修复核心3】：标记当前为单词模式
                 UIManager.highlightWord(wordId);
                 AppState.isFetchingAudio = true;
                 UIManager.updateControls();
@@ -877,12 +880,18 @@ Good *morning* / dear *professors* // It is a great *honor* / to be *here* *toda
                 AppState.isPlaying = false;
                 AppState.isPaused = false;
                 
-                if (AppState.currentSentenceIndex < AppState.sentences.length - 1) {
-                    AppState.currentSentenceIndex++;
-                    UIManager.highlightSentence(AppState.currentSentenceIndex);
-                    this.playSentence(AppState.currentSentenceIndex); 
+                // 【修复核心4】：只有在句子模式下，才触发自动连播下一句
+                if (AppState.playMode === 'sentence') {
+                    if (AppState.currentSentenceIndex < AppState.sentences.length - 1) {
+                        AppState.currentSentenceIndex++;
+                        UIManager.highlightSentence(AppState.currentSentenceIndex);
+                        this.playSentence(AppState.currentSentenceIndex); 
+                    } else {
+                        AppState.currentSentenceIndex = 0;
+                        UIManager.updateControls();
+                    }
                 } else {
-                    AppState.currentSentenceIndex = 0;
+                    // 单词发音结束，直接重置界面按钮状态即可，不自动连播
                     UIManager.updateControls();
                 }
             }
